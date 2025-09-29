@@ -1,0 +1,287 @@
+<div class="card">
+  <p-toolbar styleClass="mb-4 gap-2">
+    <ng-template pTemplate="left">
+      <p-button
+        severity="success"
+        label="Nuevo Item"
+        icon="pi pi-plus"
+        class="mr-2"
+        (onClick)="openNew()"
+      />
+      <p-button
+        label="Exportar"
+        icon="pi pi-upload"
+        severity="help"
+        (onClick)="exportCSV()"
+      />
+    </ng-template>
+
+    <ng-template pTemplate="right">
+      <span class="p-input-icon-left">
+        <i class="pi pi-search"></i>
+        <input
+          pInputText
+          type="text"
+          placeholder="Buscar..."
+          (input)="onGlobalFilter(dt, $event)"
+          class="w-full"
+        />
+      </span>
+    </ng-template>
+  </p-toolbar>
+
+  <p-table
+    #dt
+    [value]="supplierItems()"
+    [rows]="10"
+    [paginator]="true"
+    [globalFilterFields]="['product_name', 'supplier_name', 'currency']"
+    [tableStyle]="{ 'min-width': '75rem' }"
+    [loading]="loading"
+    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} entradas"
+    [showCurrentPageReport]="true"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    [sortField]="'product_name'"
+    [sortOrder]="1"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        <th pSortableColumn="product_name">
+          Producto <p-sortIcon field="product_name" />
+        </th>
+        <th pSortableColumn="supplier_name">
+          Proveedor <p-sortIcon field="supplier_name" />
+        </th>
+        <th pSortableColumn="price">
+          Precio <p-sortIcon field="price" />
+        </th>
+        <th pSortableColumn="currency">
+          Moneda <p-sortIcon field="currency" />
+        </th>
+        <th pSortableColumn="min_order_qty">
+          Cant. Mínima <p-sortIcon field="min_order_qty" />
+        </th>
+        <th pSortableColumn="pack_size">
+          Tamaño Pack <p-sortIcon field="pack_size" />
+        </th>
+        <th pSortableColumn="lead_time_days">
+          Tiempo Entrega <p-sortIcon field="lead_time_days" />
+        </th>
+        <th pSortableColumn="is_active">
+          Estado <p-sortIcon field="is_active" />
+        </th>
+        <th pSortableColumn="is_preferred">
+          Preferido <p-sortIcon field="is_preferred" />
+        </th>
+        <th>Acciones</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-item>
+      <tr>
+        <td>{{ item.product_name }}</td>
+        <td>{{ item.supplier_name }}</td>
+        <td>{{ item.price | currency: item.currency:'symbol':'1.2-2' }}</td>
+        <td>{{ item.currency }}</td>
+        <td>{{ item.min_order_qty }}</td>
+        <td>{{ item.pack_size }}</td>
+        <td>{{ item.lead_time_days }} días</td>
+        <td>
+          <p-tag
+            [value]="getStatusLabel(item.is_active)"
+            [severity]="getStatusSeverity(item.is_active)"
+          />
+        </td>
+        <td>
+          <p-tag
+            [value]="getPreferredLabel(item.is_preferred)"
+            [severity]="getPreferredSeverity(item.is_preferred)"
+          />
+        </td>
+        <td>
+          <p-button
+            icon="pi pi-pencil"
+            class="mr-2"
+            severity="info"
+            [text]="true"
+            [rounded]="true"
+            pTooltip="Editar"
+            (onClick)="editSupplierItem(item)"
+          />
+          <p-button
+            icon="pi pi-star"
+            class="mr-2"
+            severity="help"
+            [text]="true"
+            [rounded]="true"
+            pTooltip="Marcar como preferido"
+            (onClick)="setAsPreferred(item)"
+            *ngIf="!item.is_preferred"
+          />
+          <p-button
+            [icon]="item.is_active ? 'pi pi-eye-slash' : 'pi pi-eye'"
+            class="mr-2"
+            [severity]="item.is_active ? 'secondary' : 'success'"
+            [text]="true"
+            [rounded]="true"
+            [pTooltip]="item.is_active ? 'Desactivar' : 'Activar'"
+            (onClick)="toggleActive(item)"
+          />
+          <p-button
+            icon="pi pi-trash"
+            severity="danger"
+            [text]="true"
+            [rounded]="true"
+            pTooltip="Eliminar"
+            (onClick)="confirmDelete(item)"
+          />
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="summary">
+      <div class="flex align-items-center justify-content-between">
+        En total hay {{ supplierItems().length }} items de proveedores.
+      </div>
+    </ng-template>
+  </p-table>
+</div>
+
+<!-- Dialog para editar/crear supplier item -->
+<p-dialog
+  [(visible)]="supplierItemDialog"
+  [style]="{ width: '550px' }"
+  header="Detalles del Item de Proveedor"
+  [modal]="true"
+  styleClass="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <div class="field">
+      <label for="product">Producto *</label>
+      <p-select
+        id="product"
+        [options]="products()"
+        [(ngModel)]="supplierItem.product_id"
+        optionLabel="name"
+        optionValue="id"
+        placeholder="Seleccionar producto"
+        [filter]="true"
+        [showClear]="true"
+        [required]="true"
+      >
+      </p-select>
+    </div>
+
+    <div class="field">
+      <label for="supplier">Proveedor *</label>
+      <p-select
+        id="supplier"
+        [options]="suppliers()"
+        [(ngModel)]="supplierItem.supplier_id"
+        optionLabel="name"
+        optionValue="id"
+        placeholder="Seleccionar proveedor"
+        [filter]="true"
+        [showClear]="true"
+        [required]="true"
+      >
+      </p-select>
+    </div>
+
+    <div class="formgrid grid">
+      <div class="field col">
+        <label for="price">Precio *</label>
+        <p-inputNumber
+          id="price"
+          [(ngModel)]="supplierItem.price"
+          mode="decimal"
+          [minFractionDigits]="2"
+          [maxFractionDigits]="2"
+          [min]="0"
+          placeholder="0.00"
+          [required]="true"
+        />
+      </div>
+      <div class="field col">
+        <label for="currency">Moneda</label>
+        <p-select
+          id="currency"
+          [options]="currencies"
+          [(ngModel)]="supplierItem.currency"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Seleccionar moneda"
+        >
+        </p-select>
+      </div>
+    </div>
+
+    <div class="formgrid grid">
+      <div class="field col">
+        <label for="minOrderQty">Cantidad Mínima</label>
+        <p-inputNumber
+          id="minOrderQty"
+          [(ngModel)]="supplierItem.min_order_qty"
+          mode="decimal"
+          [min]="0"
+          placeholder="0"
+        />
+      </div>
+      <div class="field col">
+        <label for="packSize">Tamaño Pack</label>
+        <p-inputNumber
+          id="packSize"
+          [(ngModel)]="supplierItem.pack_size"
+          mode="decimal"
+          [min]="1"
+          placeholder="1"
+        />
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="leadTime">Tiempo de Entrega (días)</label>
+      <p-inputNumber
+        id="leadTime"
+        [(ngModel)]="supplierItem.lead_time_days"
+        [min]="1"
+        placeholder="1"
+      />
+    </div>
+
+    <div class="formgrid grid">
+      <div class="field col">
+        <label>Estado</label>
+        <p-toggleSwitch
+          [(ngModel)]="supplierItem.is_active"
+        />
+        <small>{{ supplierItem.is_active ? 'Activo' : 'Inactivo' }}</small>
+      </div>
+      <div class="field col">
+        <label>Preferido</label>
+        <p-toggleSwitch
+          [(ngModel)]="supplierItem.is_preferred"
+        />
+        <small>{{ supplierItem.is_preferred ? 'Proveedor preferido' : 'Proveedor normal' }}</small>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template pTemplate="footer">
+    <p-button
+      label="Cancelar"
+      icon="pi pi-times"
+      [text]="true"
+      (onClick)="hideDialog()"
+    />
+    <p-button
+      label="Guardar"
+      icon="pi pi-check"
+      [text]="true"
+      (onClick)="saveSupplierItem()"
+    />
+  </ng-template>
+</p-dialog>
+
+<p-confirmDialog />
+<p-toast />

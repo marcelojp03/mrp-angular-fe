@@ -1,0 +1,150 @@
+<div class="card">
+  <p-toolbar styleClass="mb-4 gap-2">
+    <ng-template pTemplate="left">
+      <p-button
+        severity="success"
+        label="Nuevo"
+        icon="pi pi-plus"
+        class="mr-2"
+        (onClick)="openNew()"
+      />
+    </ng-template>
+
+    <ng-template pTemplate="right">
+      <span class="p-input-icon-left">
+        <i class="pi pi-search"></i>
+        <input
+          pInputText
+          type="text"
+          placeholder="Buscar almacenes..."
+          (input)="onGlobalFilter($event)"
+          class="w-full"
+        />
+      </span>
+    </ng-template>
+  </p-toolbar>
+
+  <p-table
+    #dt
+    [value]="filteredWarehouses()"
+    [rows]="10"
+    [paginator]="true"
+    [globalFilterFields]="['name', 'location']"
+    [tableStyle]="{ 'min-width': '75rem' }"
+    [loading]="loading()"
+    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} entradas"
+    [showCurrentPageReport]="true"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    [sortField]="'name'"
+    [sortOrder]="1"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        <th pSortableColumn="name">
+          Nombre <p-sortIcon field="name" />
+        </th>
+        <th pSortableColumn="location">
+          Ubicación <p-sortIcon field="location" />
+        </th>
+        <th pSortableColumn="org_id">
+          Organización <p-sortIcon field="org_id" />
+        </th>
+        <th>Acciones</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-warehouse>
+      <tr>
+        <td>{{ warehouse.name }}</td>
+        <td>{{ warehouse.location }}</td>
+        <td>{{ warehouse.org_id }}</td>
+        <td>
+          <p-button
+            icon="pi pi-pencil"
+            class="mr-2"
+            severity="info"
+            [text]="true"
+            [rounded]="true"
+            pTooltip="Editar"
+            (onClick)="editWarehouse(warehouse)"
+          />
+          <p-button
+            icon="pi pi-trash"
+            severity="danger"
+            [text]="true"
+            [rounded]="true"
+            pTooltip="Eliminar"
+            (onClick)="deleteWarehouse(warehouse)"
+          />
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="8">No se encontraron almacenes.</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<!-- Dialog para editar/crear almacén -->
+<p-dialog
+  [(visible)]="warehouseDialog"
+  [style]="{ width: '450px' }"
+  header="Detalles del Almacén"
+  [modal]="true"
+  styleClass="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <div class="field">
+      <label for="name">Nombre *</label>
+      <input
+        type="text"
+        pInputText
+        id="name"
+        [(ngModel)]="warehouseForm().name"
+        required
+        autofocus
+        [class]="{ 'ng-invalid ng-dirty': submitted() && !warehouseForm().name.trim() }"
+      />
+      <small class="p-error" *ngIf="submitted() && !warehouseForm().name.trim()">
+        El nombre es requerido.
+      </small>
+    </div>
+
+    <div class="field">
+      <label for="location">Ubicación *</label>
+      <input
+        type="text"
+        pInputText
+        id="location"
+        [(ngModel)]="warehouseForm().location"
+        required
+        [class]="{ 'ng-invalid ng-dirty': submitted() && !warehouseForm().location.trim() }"
+      />
+      <small class="p-error" *ngIf="submitted() && !warehouseForm().location.trim()">
+        La ubicación es requerida.
+      </small>
+    </div>
+
+  </ng-template>
+
+  <ng-template pTemplate="footer">
+    <p-button
+      label="Cancelar"
+      icon="pi pi-times"
+      [text]="true"
+      (onClick)="hideDialog()"
+    />
+    <p-button
+      label="Guardar"
+      icon="pi pi-check"
+      [text]="true"
+      (onClick)="saveWarehouse()"
+    />
+  </ng-template>
+</p-dialog>
+
+<p-confirmDialog />
+<p-toast />

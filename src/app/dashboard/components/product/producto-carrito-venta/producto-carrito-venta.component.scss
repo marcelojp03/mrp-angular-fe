@@ -1,0 +1,119 @@
+@use '@angular/material' as mat;
+$primary-palette: mat.m2-define-palette(mat.$m2-yellow-palette);
+// $primary-palette: mat.m2-define-palette(mat.$m2-light-blue-palette);
+
+$primary: mat.m2-get-color-from-palette($primary-palette, 700);
+// $primary: mat.m2-get-color-from-palette($primary-palette, 800);
+$color: black;
+
+
+.mat-dialog-title{
+    float: left;
+    display: flex;
+}
+
+.title-header{
+   height: 70px !important; 
+   background-color: $primary;
+   align-items: center;
+}
+.title{
+    font-weight: 500;
+}
+.close-button{
+    float: right;
+    top:-55px;
+    right:20px;
+    //position: absolute;
+    // top: 0;
+    // right: 0;
+    // padding: 2px;
+    //line-height: 3px;
+    //min-width: auto;
+  }
+  
+.close-icon {
+    transition: 1s ease-in-out;
+  }
+  
+.close-icon:hover {
+    transform: rotate(180deg);
+}
+  
+
+table{
+    width: 100%;
+    background-color: white;
+}
+.mat-mdc-paginator{
+    background-color: white;
+}
+.mat-mdc-header-row .mat-mdc-header-cell {
+    // border-bottom: 1px solid transparent;
+    // border-top: 1px solid transparent;
+    text-align: center;
+}
+.mat-mdc-row .mat-mdc-cell {
+      // border-bottom: 1px solid transparent;
+      // border-top: 1px solid transparent;
+      cursor: pointer;
+      vertical-align: middle;
+      //text-align: center;
+}
+
+
+.badge-sucess
+{
+    background-color:  #2ecc71 ;
+}
+
+.badge-danger
+{
+    background-color:  #e74c3c ;
+}
+
+.badge-warning
+{
+    background-color: #f4d03f ;
+}
+
+.mat-column-acciones {
+    flex: 0 0 10% !important;
+    width: 5% !important;
+    text-align: center;
+}
+
+.mat-column-stock {
+
+flex: 0 0 10% !important;
+width: 5% !important;
+text-align: center;
+//border-left: 0.5px black solid;
+}
+
+
+.mat-column-precio {
+    
+    flex: 0 0 15% !important;
+    width: 10% !important;
+    //border-left: 0.5px black solid;
+    //text-align: center;
+    //border-right: 1px black solid;
+}
+    
+.mat-column-cantidad {
+    
+    flex: 0 0 10% !important;
+    width: 15% !important;
+    //border-left: 0.5px black solid;
+    //text-align: center;
+    //border-right: 1px black solid;
+}
+
+.mat-column-nombre {
+    
+    flex: 0 0 70% !important;
+    width: 60% !important;
+    //border-left: 0.5px black solid;
+    //border-right: 1px black solid;
+}

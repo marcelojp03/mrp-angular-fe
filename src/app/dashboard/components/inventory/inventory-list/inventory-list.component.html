@@ -1,0 +1,244 @@
+<div class="card">
+  <p-toolbar styleClass="mb-4 gap-2">
+    <ng-template pTemplate="left">
+      <p-button
+        severity="success"
+        label="Nuevo"
+        icon="pi pi-plus"
+        class="mr-2"
+        (onClick)="openNew()"
+      />
+    </ng-template>
+
+    <ng-template pTemplate="right">
+      <span class="p-input-icon-left">
+        <i class="pi pi-search"></i>
+        <input
+          pInputText
+          type="text"
+          placeholder="Buscar inventario..."
+          (input)="onGlobalFilter($event)"
+          class="w-full"
+        />
+      </span>
+    </ng-template>
+  </p-toolbar>
+
+  <p-table
+    #dt
+    [value]="filteredInventories()"
+    [rows]="10"
+    [paginator]="true"
+    [globalFilterFields]="['producto.nombre', 'almacen.nombre', 'ubicacion']"
+    [tableStyle]="{ 'min-width': '75rem' }"
+    [loading]="loading()"
+    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} entradas"
+    [showCurrentPageReport]="true"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    [sortField]="'producto.nombre'"
+    [sortOrder]="1"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        <th pSortableColumn="id_producto">
+          ID Producto <p-sortIcon field="id_producto" />
+        </th>
+        <th pSortableColumn="producto.nombre">
+          Producto <p-sortIcon field="producto.nombre" />
+        </th>
+        <th pSortableColumn="id_almacen">
+          ID Almacén <p-sortIcon field="id_almacen" />
+        </th>
+        <th pSortableColumn="almacen.nombre">
+          Almacén <p-sortIcon field="almacen.nombre" />
+        </th>
+        <th pSortableColumn="ubicacion">
+          Ubicación <p-sortIcon field="ubicacion" />
+        </th>
+        <th pSortableColumn="stock">
+          Stock <p-sortIcon field="stock" />
+        </th>
+        <th pSortableColumn="stock_minimo">
+          Stock Min. <p-sortIcon field="stock_minimo" />
+        </th>
+        <th pSortableColumn="stock_maximo">
+          Stock Max. <p-sortIcon field="stock_maximo" />
+        </th>
+        <th pSortableColumn="estado">
+          Estado <p-sortIcon field="estado" />
+        </th>
+        <th>Acciones</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-inventory>
+      <tr>
+        <td>{{ inventory.id_producto }}</td>
+        <td>{{ inventory.producto?.nombre || 'N/A' }}</td>
+        <td>{{ inventory.id_almacen }}</td>
+        <td>{{ inventory.almacen?.nombre || 'N/A' }}</td>
+        <td>{{ inventory.ubicacion }}</td>
+        <td class="text-center">
+          <p-tag
+            [value]="(inventory.stock || 0).toString()"
+            [severity]="getStockSeverity(inventory.stock || 0, inventory.stock_minimo || 0)"
+          />
+        </td>
+        <td class="text-center">{{ inventory.stock_minimo || 0 }}</td>
+        <td class="text-center">{{ inventory.stock_maximo || 0 }}</td>
+        <td>
+          <p-tag
+            [value]="getStatusLabel(inventory.estado)"
+            [severity]="getSeverity(inventory.estado)"
+          />
+        </td>
+        <td>
+          <p-button
+            icon="pi pi-pencil"
+            class="mr-2"
+            severity="info"
+            [text]="true"
+            [rounded]="true"
+            pTooltip="Editar"
+            (onClick)="editInventory(inventory)"
+          />
+          <p-button
+            *ngIf="inventory.estado"
+            icon="pi pi-trash"
+            severity="danger"
+            [text]="true"
+            [rounded]="true"
+            pTooltip="Eliminar"
+            (onClick)="deleteInventory(inventory)"
+          />
+          <p-button
+            *ngIf="!inventory.estado"
+            icon="pi pi-check"
+            severity="success"
+            [text]="true"
+            [rounded]="true"
+            pTooltip="Reactivar"
+            (onClick)="reactivateInventory(inventory)"
+          />
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="10">No se encontraron registros de inventario.</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<!-- Dialog para editar/crear inventario -->
+<p-dialog
+  [(visible)]="inventoryDialog"
+  [style]="{ width: '450px' }"
+  header="Detalles del Inventario"
+  [modal]="true"
+  styleClass="p-fluid"
+>
+  <ng-template pTemplate="content">
+    <div class="field">
+      <label for="id_producto">ID Producto *</label>
+      <input
+        type="number"
+        pInputText
+        id="id_producto"
+        [(ngModel)]="inventoryForm().id_producto"
+        required
+        autofocus
+        [class]="{ 'ng-invalid ng-dirty': submitted() && !inventoryForm().id_producto }"
+      />
+      <small class="p-error" *ngIf="submitted() && !inventoryForm().id_producto">
+        ID Producto es requerido.
+      </small>
+    </div>
+
+    <div class="field">
+      <label for="id_almacen">ID Almacén *</label>
+      <input
+        type="number"
+        pInputText
+        id="id_almacen"
+        [(ngModel)]="inventoryForm().id_almacen"
+        required
+        [class]="{ 'ng-invalid ng-dirty': submitted() && !inventoryForm().id_almacen }"
+      />
+      <small class="p-error" *ngIf="submitted() && !inventoryForm().id_almacen">
+        ID Almacén es requerido.
+      </small>
+    </div>
+
+    <div class="field">
+      <label for="stock">Stock *</label>
+      <input
+        type="number"
+        pInputText
+        id="stock"
+        [(ngModel)]="inventoryForm().stock"
+        required
+        [class]="{ 'ng-invalid ng-dirty': submitted() && ((inventoryForm().stock || 0) < 0) }"
+      />
+      <small class="p-error" *ngIf="submitted() && ((inventoryForm().stock || 0) < 0)">
+        El stock debe ser mayor o igual a 0.
+      </small>
+    </div>
+
+    <div class="grid">
+      <div class="col-12 md:col-6">
+        <div class="field">
+          <label for="stock_minimo">Stock Mínimo</label>
+          <input
+            type="number"
+            pInputText
+            id="stock_minimo"
+            [(ngModel)]="inventoryForm().stock_minimo"
+          />
+        </div>
+      </div>
+
+      <div class="col-12 md:col-6">
+        <div class="field">
+          <label for="stock_maximo">Stock Máximo</label>
+          <input
+            type="number"
+            pInputText
+            id="stock_maximo"
+            [(ngModel)]="inventoryForm().stock_maximo"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="ubicacion">Ubicación</label>
+      <input
+        type="text"
+        pInputText
+        id="ubicacion"
+        [(ngModel)]="inventoryForm().ubicacion"
+      />
+    </div>
+  </ng-template>
+
+  <ng-template pTemplate="footer">
+    <p-button
+      label="Cancelar"
+      icon="pi pi-times"
+      [text]="true"
+      (onClick)="hideDialog()"
+    />
+    <p-button
+      label="Guardar"
+      icon="pi pi-check"
+      [text]="true"
+      (onClick)="saveInventory()"
+    />
+  </ng-template>
+</p-dialog>
+
+<p-confirmDialog />
+<p-toast />

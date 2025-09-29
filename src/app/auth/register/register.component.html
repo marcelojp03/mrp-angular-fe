@@ -1,0 +1,40 @@
+<div class="bg-surface-50 dark:bg-surface-950 flex justify-center items-center min-h-screen">
+  <div class="bg-white dark:bg-surface-900 p-6 rounded shadow w-[90%] sm:w-[28rem]">
+    <div class="text-center text-2xl mb-4">Registro</div>
+
+    <form [formGroup]="form" (ngSubmit)="form.valid && registerUser()" class="p-fluid">
+
+      <!-- Correo -->
+      <div class="field mb-4">
+        <label for="email">Correo electrónico</label>
+        <input pInputText id="email" type="email" formControlName="email" placeholder="example@email.com" />
+        <small *ngIf="form.controls['email'].invalid && form.controls['email'].touched" class="p-error">
+          {{ form.controls['email'].hasError('required') ? 'Campo requerido' : 'Correo inválido' }}
+        </small>
+      </div>
+
+      <!-- Contraseña -->
+      <div class="field mb-4">
+        <label for="password">Contraseña</label>
+        <p-password id="password" formControlName="password" inputStyleClass="w-full" [toggleMask]="true" [feedback]="true"></p-password>
+      </div>
+
+      <!-- Confirmar Contraseña -->
+      <div class="field mb-4">
+        <label for="passwordConfirmation">Confirmar contraseña</label>
+        <p-password id="passwordConfirmation" formControlName="passwordConfirmation" inputStyleClass="w-full" [toggleMask]="true" [feedback]="false"></p-password>
+        <small *ngIf="form.hasError('notSame')" class="p-error">Las contraseñas no coinciden</small>
+      </div>
+
+      <p-button type="submit" label="Registrarse" class="w-full" [disabled]="!form.valid || (registerSubscription && !registerSubscription.closed)"></p-button>
+
+      <div class="text-center mt-3" *ngIf="registerSubscription && !registerSubscription.closed">
+        <p-progressSpinner styleClass="block mx-auto" strokeWidth="6" style="width:30px;height:30px;"></p-progressSpinner>
+      </div>
+    </form>
+
+    <div class="text-center mt-4">
+      <span>¿Ya tienes una cuenta? <a routerLink="/auth/login" class="text-primary">Inicia sesión</a></span>
+    </div>
+  </div>
+</div>

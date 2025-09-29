@@ -1,0 +1,95 @@
+:host ::ng-deep .p-datatable-frozen-tbody {
+    font-weight: bold;
+}
+
+:host ::ng-deep .p-datatable.p-datatable-sm .p-datatable-header {
+    padding: 0.375rem 0.5rem;
+}
+
+.card {
+  background: var(--surface-card);
+  padding: 2rem;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+}
+
+.p-toolbar {
+  border: none;
+  background: transparent;
+  padding: 0 0 1rem 0;
+}
+
+.p-tag {
+  border-radius: 2rem;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.p-button {
+  margin-right: 0.5rem;
+}
+
+.p-button:last-child {
+  margin-right: 0;
+}
+
+.p-dialog .p-dialog-header {
+  border-bottom: 0 none;
+  background: var(--surface-section);
+  color: var(--text-color);
+  padding: 1.5rem;
+}
+
+.p-dialog .p-dialog-content {
+  background: var(--surface-section);
+  color: var(--text-color);
+  padding: 0 1.5rem 2rem 1.5rem;
+}
+
+.p-dialog .p-dialog-footer {
+  border-top: 0 none;
+  background: var(--surface-section);
+  color: var(--text-color);
+  padding: 0 1.5rem 1.5rem 1.5rem;
+}
+
+.field {
+  margin-bottom: 1rem;
+}
+
+.field label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-color-secondary);
+  font-weight: 500;
+}
+
+.p-inputtext, .p-dropdown, .p-inputnumber {
+  width: 100%;
+}
+
+.p-error {
+  font-size: 0.75rem;
+  color: var(--red-500);
+}
+
+.formgrid.grid {
+  margin: 0;
+}
+
+.col {
+  padding: 0 0.5rem;
+}
+
+.col:first-child {
+  padding-left: 0;
+}
+
+.col:last-child {
+  padding-right: 0;
+}
+
+small {
+  color: var(--text-color-secondary);
+  font-size: 0.75rem;
+}
