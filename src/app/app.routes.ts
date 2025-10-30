@@ -4,8 +4,15 @@ import { AppLayout } from './core/layouts/component/app.layout';
 import { Notfound } from './core/layouts/component/notfound';
 import { authGuard, authMatchGuard } from './core/guards/auth.guard';
 import { loggedResolver } from './core/guards/logged.guard';
+import { LandingComponent } from './landing/landing.component';
 
 export const appRoutes: Routes = [
+    // Landing Page (público, sin autenticación)
+    {
+        path: 'landing',
+        component: LandingComponent
+    },
+
     // Zona protegida por authGuard
     {
         path: '',
@@ -34,5 +41,5 @@ export const appRoutes: Routes = [
     },
 
     { path: 'not-found', component: Notfound },
-    { path: '**', redirectTo: 'not-found' }
+    { path: '**', redirectTo: 'landing' }  // Redirigir a landing por defecto
 ];

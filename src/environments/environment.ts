@@ -5,14 +5,13 @@
 export const environment = {
   production: false,
   backend: {
-    host: 'http://127.0.0.1:4646/api',
-    host3: 'http://localhost:8585/api',
-    host4: 'http://207.244.229.255:8510/api',
-    reportes: 'http://127.0.0.1:8530/api/rep',
-    //reportes: 'http://207.244.229.255:8530/api/rep',
+    host: 'http://localhost:4646/api',
+    host3: '',
+    host4: '',
+    reportes: 'http://localhost:8530/api/rep',
   },
   oauth: {
-    host: 'http://127.0.0.1:8585/api',
+    host: 'http://localhost:8585/api',
     host3: 'http://localhost:8585/api',
     host4: 'http://207.244.229.255:8510/api',
     client_id: '2',

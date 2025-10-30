@@ -1,19 +1,47 @@
-<div class="grid grid-nogutter bg-white dark:bg-gray-900 text-black dark:text-white border border-gray-300 dark:border-gray-700 p-5 rounded-lg w-full lg:w-10">
-  <div class="col-12 md:col-6 flex align-items-center justify-content-center p-4">
-    <div class="text-center md:text-left">
-      <h1 class="text-3xl font-bold mb-3">GRUPO 6 SISTEMAS DE INFORMACION 2</h1>
-      <p class="mt-0 mb-4 text-gray-600 dark:text-gray-300">SISTEMA MRP</p>
-      <button
-        pButton
-        type="button"
-        label="Learn More"
-        class="bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white px-4 py-2 rounded-md"
-      ></button>
+<div class="grid grid-cols-12 gap-8">
+  <!-- Welcome Card -->
+  <div class="col-span-12">
+    <div class="card bg-gradient-to-r from-primary-500 to-primary-700 text-white mb-0">
+      <div class="flex align-items-center justify-content-between">
+        <div>
+          <h1 class="text-4xl font-bold mb-2">¡Bienvenido al Sistema MRP!</h1>
+          <p class="text-xl opacity-90 mb-3">
+            Panel de control de tu organización
+          </p>
+          <p-tag *ngIf="subscription()?.plan" 
+                 [value]="'Plan: ' + subscription()!.plan.name" 
+                 severity="contrast"
+                 styleClass="text-lg">
+          </p-tag>
+        </div>
+        <i class="pi pi-chart-line text-8xl opacity-50"></i>
+      </div>
     </div>
   </div>
-  <div class="col-12 md:col-6 flex align-items-center justify-content-center p-4">
-    <div class="w-full md:w-80 h-48 bg-gray-100 dark:bg-gray-800 rounded-lg flex align-items-center justify-content-center">
-      <i class="pi pi-chart-bar text-6xl text-gray-400"></i>
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="col-span-12">
+      <div class="card text-center py-8">
+        <p-progressSpinner styleClass="w-20 h-20" />
+        <p class="mt-4 text-surface-600 dark:text-surface-300">
+          Cargando estadísticas...
+        </p>
+      </div>
     </div>
-  </div>
+  }
+
+  <!-- Stats Cards Widget -->
+  @if (!loading() && stats()) {
+    <app-stats-widget class="contents" [stats]="stats()" />
+  }
+
+  <!-- Stock Alerts Widget -->
+  @if (!loading()) {
+    <div class="col-span-12">
+      <app-stock-alerts-widget [alerts]="stockAlerts()" />
+    </div>
+  }
 </div>
+
+<p-toast />

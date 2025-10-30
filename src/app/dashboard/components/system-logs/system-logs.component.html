@@ -1,0 +1,247 @@
+<div class="card">
+  <div class="flex justify-between items-start mb-6">
+    <div>
+      <h2 class="text-3xl font-bold text-surface-900 dark:text-surface-0 mb-2">
+        <i class="pi pi-list mr-2"></i>
+        Logs del Sistema
+      </h2>
+      <p class="text-surface-600 dark:text-surface-300">
+        Historial completo de acciones y eventos
+      </p>
+    </div>
+
+    <p-button label="Exportar CSV" 
+              icon="pi pi-download" 
+              severity="help"
+              [outlined]="true"
+              (onClick)="exportLogs()"
+              [disabled]="loading() || logs().length === 0">
+    </p-button>
+  </div>
+
+  <!-- Filters -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div>
+      <label for="method" class="block font-medium mb-2">Método HTTP</label>
+      <p-select id="method" 
+                [(ngModel)]="selectedMethod" 
+                [ngModelOptions]="{updateOn: 'change'}"
+                [options]="methodOptions" 
+                optionLabel="label" 
+                optionValue="value"
+                placeholder="Todos los métodos"
+                styleClass="w-full">
+      </p-select>
+    </div>
+
+    <div>
+      <label for="userId" class="block font-medium mb-2">ID de Usuario</label>
+      <input pInputText id="userId" 
+             type="text" 
+             [(ngModel)]="selectedUser" 
+             [ngModelOptions]="{updateOn: 'change'}"
+             placeholder="Ej: 1, 2, 3..."
+             class="w-full" />
+    </div>
+
+    <div>
+      <label for="path" class="block font-medium mb-2">Ruta (Path)</label>
+      <input pInputText id="path" 
+             type="text" 
+             [(ngModel)]="searchPath" 
+             [ngModelOptions]="{updateOn: 'change'}"
+             placeholder="Ej: /api/products"
+             class="w-full" />
+    </div>
+
+    <div class="flex items-end gap-2">
+      <p-button label="Aplicar" 
+                icon="pi pi-filter" 
+                (onClick)="applyFilters()"
+                [disabled]="loading()"
+                styleClass="flex-1">
+      </p-button>
+      <p-button label="Limpiar" 
+                icon="pi pi-times" 
+                severity="secondary"
+                [outlined]="true"
+                (onClick)="clearFilters()"
+                [disabled]="loading()"
+                styleClass="flex-1">
+      </p-button>
+    </div>
+  </div>
+
+  <!-- Logs Table -->
+  <p-table [value]="logs()" 
+           [loading]="loading()"
+           [lazy]="true"
+           [paginator]="true"
+           [rows]="limit()"
+           [totalRecords]="totalRecords()"
+           [rowsPerPageOptions]="[10, 25, 50, 100]"
+           [showCurrentPageReport]="true"
+           currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} logs"
+           (onLazyLoad)="onPageChange($event)"
+           styleClass="p-datatable-sm"
+           dataKey="id">
+    
+    <ng-template pTemplate="header">
+      <tr>
+        <th pSortableColumn="id">
+          ID
+          <p-sortIcon field="id" />
+        </th>
+        <th pSortableColumn="user_id">
+          Usuario ID
+          <p-sortIcon field="user_id" />
+        </th>
+        <th pSortableColumn="method">
+          Método
+          <p-sortIcon field="method" />
+        </th>
+        <th>Path</th>
+        <th pSortableColumn="status_code">
+          Status
+          <p-sortIcon field="status_code" />
+        </th>
+        <th>IP</th>
+        <th pSortableColumn="ts">
+          Fecha
+          <p-sortIcon field="ts" />
+        </th>
+        <th>Acciones</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-log>
+      <tr>
+        <td>{{ log.id }}</td>
+        <td>
+          <p-tag [value]="log.user_id.toString()" severity="info" />
+        </td>
+        <td>
+          <p-tag [value]="log.method" [severity]="getMethodSeverity(log.method)" />
+        </td>
+        <td>
+          <code class="text-sm">{{ log.path }}</code>
+        </td>
+        <td>
+          <p-tag [value]="log.status_code.toString()" 
+                 [severity]="getStatusSeverity(log.status_code)" />
+        </td>
+        <td>{{ log.ip }}</td>
+        <td>{{ log.ts | date: 'dd/MM/yyyy HH:mm:ss' }}</td>
+        <td>
+          <p-button icon="pi pi-eye" 
+                    [text]="true" 
+                    [rounded]="true" 
+                    severity="secondary"
+                    (onClick)="viewLogDetails(log)"
+                    pTooltip="Ver detalles">
+          </p-button>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="8" class="text-center py-8">
+          <i class="pi pi-inbox text-surface-300 dark:text-surface-600" 
+             style="font-size: 3rem"></i>
+          <p class="text-xl text-surface-600 dark:text-surface-300 mt-4">
+            No se encontraron logs
+          </p>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="loadingbody">
+      <tr>
+        <td colspan="8" class="text-center py-8">
+          <p-progressSpinner styleClass="w-12 h-12" />
+          <p class="mt-4 text-surface-600 dark:text-surface-300">
+            Cargando logs...
+          </p>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<!-- Log Details Dialog -->
+<p-dialog [(visible)]="showDialog" 
+          [modal]="true" 
+          [style]="{ width: '50vw' }"
+          [breakpoints]="{ '960px': '75vw', '640px': '90vw' }"
+          header="Detalles del Log"
+          (onHide)="selectedLog.set(null)">
+  
+  <div *ngIf="selectedLog()">
+    <div class="grid grid-cols-2 gap-4">
+      <div class="detail-item">
+        <label>ID:</label>
+        <p>{{ selectedLog()!.id }}</p>
+      </div>
+
+      <div class="detail-item">
+        <label>Usuario ID:</label>
+        <p>
+          <p-tag [value]="selectedLog()!.user_id.toString()" severity="info" />
+        </p>
+      </div>
+
+      <div class="detail-item">
+        <label>Organización ID:</label>
+        <p>{{ selectedLog()!.org_id }}</p>
+      </div>
+
+      <div class="detail-item">
+        <label>Método:</label>
+        <p>
+          <p-tag [value]="selectedLog()!.method" 
+                 [severity]="getMethodSeverity(selectedLog()!.method)" />
+        </p>
+      </div>
+
+      <div class="detail-item col-span-2">
+        <label>Path:</label>
+        <p>
+          <code class="text-lg">{{ selectedLog()!.path }}</code>
+        </p>
+      </div>
+
+      <div class="detail-item">
+        <label>Status Code:</label>
+        <p>
+          <p-tag [value]="selectedLog()!.status_code.toString()" 
+                 [severity]="getStatusSeverity(selectedLog()!.status_code)" />
+        </p>
+      </div>
+
+      <div class="detail-item">
+        <label>IP Address:</label>
+        <p>{{ selectedLog()!.ip }}</p>
+      </div>
+
+      <div class="detail-item col-span-2" *ngIf="selectedLog()!.user_agent">
+        <label>User Agent:</label>
+        <p class="text-sm break-words">{{ selectedLog()!.user_agent }}</p>
+      </div>
+
+      <div class="detail-item col-span-2">
+        <label>Timestamp:</label>
+        <p>{{ selectedLog()!.ts | date: 'dd/MM/yyyy HH:mm:ss.SSS' }}</p>
+      </div>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <p-button label="Cerrar" 
+              icon="pi pi-times" 
+              (onClick)="showDialog.set(false)">
+    </p-button>
+  </ng-template>
+</p-dialog>
+
+<p-toast />

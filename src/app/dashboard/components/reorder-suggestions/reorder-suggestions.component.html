@@ -1,0 +1,149 @@
+<p-toast />
+
+<div class="grid grid-cols-12 gap-6">
+  <!-- Header -->
+  <div class="col-span-12">
+    <div class="card">
+      <div class="flex justify-between items-center">
+        <div>
+          <h2 class="text-3xl font-bold text-surface-900 dark:text-surface-0 m-0">
+            <i class="pi pi-refresh mr-2 text-blue-500"></i>
+            Sugerencias de Reposición
+          </h2>
+          <p class="text-muted-color mt-2">
+            Recomendaciones automáticas basadas en stock mínimo y tiempos de entrega
+          </p>
+        </div>
+        <button
+          pButton
+          icon="pi pi-refresh"
+          label="Actualizar"
+          class="p-button-outlined"
+          (click)="loadSuggestions()"
+          [loading]="loading()"
+        ></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  @if (!loading() && suggestions() && suggestions()!.length > 0) {
+    @for (stat of statsCards(); track stat.label) {
+      <div class="col-span-12 md:col-span-6 lg:col-span-3">
+        <app-stats-card [config]="stat" />
+      </div>
+    }
+  }
+
+  <!-- Table -->
+  <div class="col-span-12">
+    <div class="card">
+      @if (loading()) {
+        <div class="text-center py-8">
+          <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
+          <p class="text-muted-color mt-4">Generando sugerencias...</p>
+        </div>
+      } @else if (suggestions() && suggestions()!.length > 0) {
+        <p-table
+          [value]="suggestions()!"
+          [paginator]="true"
+          [rows]="10"
+          [rowsPerPageOptions]="[10, 25, 50]"
+          [showCurrentPageReport]="true"
+          currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} sugerencias"
+          responsiveLayout="scroll"
+          [globalFilterFields]="['code', 'name']"
+        >
+          <ng-template #header>
+            <tr>
+              <th pSortableColumn="code">
+                Código <p-sortIcon field="code"></p-sortIcon>
+              </th>
+              <th pSortableColumn="name">
+                Producto <p-sortIcon field="name"></p-sortIcon>
+              </th>
+              <th pSortableColumn="current_stock" class="text-right">
+                Stock Actual <p-sortIcon field="current_stock"></p-sortIcon>
+              </th>
+              <th pSortableColumn="min_stock" class="text-right">
+                Stock Mínimo <p-sortIcon field="min_stock"></p-sortIcon>
+              </th>
+              <th pSortableColumn="suggested_qty" class="text-right">
+                Cant. Sugerida <p-sortIcon field="suggested_qty"></p-sortIcon>
+              </th>
+              <th class="text-center">Lead Time</th>
+              <th>Recomendación</th>
+              <th class="text-center">Prioridad</th>
+              <th class="text-center">Acciones</th>
+            </tr>
+          </ng-template>
+          <ng-template #body let-item>
+            <tr>
+              <td>
+                <span class="font-medium">{{ item.code }}</span>
+              </td>
+              <td>{{ item.name }}</td>
+              <td class="text-right">
+                <span class="text-orange-500 font-medium">{{ item.current_stock }}</span>
+              </td>
+              <td class="text-right">
+                <span class="font-medium">{{ item.min_stock }}</span>
+              </td>
+              <td class="text-right">
+                <span class="text-blue-600 font-bold text-lg">{{ item.suggested_qty }}</span>
+              </td>
+              <td class="text-center">
+                @if (item.lead_time_days) {
+                  <p-tag [value]="item.lead_time_days + ' días'" severity="info" />
+                } @else {
+                  <span class="text-muted-color">—</span>
+                }
+              </td>
+              <td>
+                @if (item.hint) {
+                  <span class="text-sm text-muted-color">
+                    <i class="pi pi-info-circle mr-1"></i>{{ item.hint }}
+                  </span>
+                } @else {
+                  <span class="text-muted-color">Sin proveedor configurado</span>
+                }
+              </td>
+              <td class="text-center">
+                <p-tag
+                  [value]="getPriorityLabel(item.current_stock, item.min_stock)"
+                  [severity]="getPrioritySeverity(item.current_stock, item.min_stock)"
+                ></p-tag>
+              </td>
+              <td class="text-center">
+                <button
+                  pButton
+                  icon="pi pi-shopping-cart"
+                  label="Ordenar"
+                  class="p-button-sm p-button-success"
+                  (click)="createPurchaseOrder(item)"
+                  [disabled]="!item.supplier_id"
+                ></button>
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template #emptymessage>
+            <tr>
+              <td colspan="9" class="text-center py-8">
+                <i class="pi pi-check-circle text-4xl text-green-500 mb-3 block"></i>
+                <p class="text-muted-color">No hay sugerencias de reposición</p>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      } @else {
+        <div class="text-center py-8">
+          <i class="pi pi-check-circle text-6xl text-green-500 mb-4 block"></i>
+          <h3 class="text-xl font-semibold text-surface-900 dark:text-surface-0 mb-2">
+            ¡Stock óptimo!
+          </h3>
+          <p class="text-muted-color">No se necesitan reposiciones en este momento</p>
+        </div>
+      }
+    </div>
+  </div>
+</div>

@@ -1,0 +1,290 @@
+<div class="card">
+  <div class="flex justify-between items-start mb-6">
+    <div>
+      <h2 class="text-3xl font-bold text-surface-900 dark:text-surface-0 mb-2">
+        <i class="pi pi-crown mr-2"></i>
+        Mi Suscripción
+      </h2>
+      <p class="text-surface-600 dark:text-surface-300">
+        Administra tu plan y límites de uso
+      </p>
+    </div>
+
+    <p-button label="Actualizar Plan" 
+              icon="pi pi-arrow-up" 
+              (onClick)="goToUpgrade()">
+    </p-button>
+  </div>
+
+  <div *ngIf="loading()" class="text-center py-12">
+    <p-progressSpinner styleClass="w-20 h-20" />
+    <p class="mt-4 text-surface-600 dark:text-surface-300">
+      Cargando información de suscripción...
+    </p>
+  </div>
+
+  <div *ngIf="!loading() && plan()">
+    <!-- Current Plan Card -->
+    <div class="plan-card mb-6">
+      <div class="flex justify-between items-start">
+        <div>
+          <h3 class="text-2xl font-bold text-surface-900 dark:text-surface-0 mb-2">
+            Plan {{ plan()!.name }}
+          </h3>
+          <p class="text-surface-600 dark:text-surface-300 mb-3">
+            Código: {{ plan()!.code }}
+          </p>
+          <p-tag [value]="getStatusLabel()" 
+                 [severity]="getStatusSeverity()"
+                 styleClass="text-lg">
+          </p-tag>
+        </div>
+        <i class="pi pi-shield text-5xl text-primary-500"></i>
+      </div>
+
+      <p-divider />
+
+      <!-- Trial Info -->
+      <div *ngIf="subscription()?.is_trial && getDaysUntilTrialEnd() !== null" 
+           class="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+        <div class="flex items-center gap-3">
+          <i class="pi pi-clock text-2xl text-blue-500"></i>
+          <div>
+            <p class="font-semibold text-blue-900 dark:text-blue-100">
+              Período de Prueba
+            </p>
+            <p class="text-sm text-blue-800 dark:text-blue-200">
+              {{ getDaysUntilTrialEnd() }} días restantes
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Billing Info - Comentado porque el backend no retorna next_billing_date -->
+      <!-- <div *ngIf="subscription()!.next_billing_date" 
+           class="mb-4 p-4 bg-surface-100 dark:bg-surface-700 rounded-lg">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <i class="pi pi-calendar text-2xl text-surface-500"></i>
+            <div>
+              <p class="font-semibold text-surface-900 dark:text-surface-0">
+                Próxima Facturación
+              </p>
+              <p class="text-sm text-surface-600 dark:text-surface-300">
+                {{ subscription()!.next_billing_date | date: 'dd/MM/yyyy' }}
+              </p>
+            </div>
+          </div>
+          <p-tag *ngIf="getDaysUntilBilling() !== null"
+                 [value]="getDaysUntilBilling() + ' días'"
+                 severity="info">
+          </p-tag>
+        </div>
+      </div>
+
+      <!-- Dates -->
+      <!-- <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <p class="text-surface-500 dark:text-surface-400 text-sm mb-1">Fecha de Inicio</p>
+          <p class="text-lg font-semibold text-surface-900 dark:text-surface-0">
+            {{ subscription()!.started_at | date: 'dd/MM/yyyy' }}
+          </p>
+        </div>
+        <div>
+          <p class="text-surface-500 dark:text-surface-400 text-sm mb-1">ID de Suscripción</p>
+          <p class="text-lg font-semibold text-surface-900 dark:text-surface-0">
+            #{{ subscription()!.id }}
+          </p>
+        </div>
+      </div> -->
+    </div>
+
+    <!-- Usage Stats -->
+    <h3 class="text-2xl font-bold text-surface-900 dark:text-surface-0 mb-4">
+      Uso de Recursos
+    </h3>
+
+    <div class="grid grid-cols-1 gap-4 mb-6" *ngIf="usage()">
+      <!-- Users -->
+      <div class="usage-item" *ngIf="usage()?.users">
+        <div class="flex justify-between items-center mb-2">
+          <div class="flex items-center gap-2">
+            <i class="pi pi-users text-xl text-primary-500"></i>
+            <span class="font-semibold text-surface-900 dark:text-surface-0">Usuarios</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-lg font-bold text-surface-900 dark:text-surface-0">
+              {{ usage()!.users.current }} / {{ formatLimit(usage()!.users.limit) }}
+            </span>
+            <p-tag [value]="getUsagePercentage(usage()!.users.current, usage()!.users.limit) + '%'" 
+                   [severity]="getUsageSeverity(usage()!.users.current, usage()!.users.limit)"
+                   *ngIf="!isUnlimited(usage()!.users.limit)">
+            </p-tag>
+          </div>
+        </div>
+        <p-progressBar [value]="getUsagePercentage(usage()!.users.current, usage()!.users.limit)"
+                       [showValue]="false"
+                       [style]="{'height': '8px'}"
+                       *ngIf="!isUnlimited(usage()!.users.limit)">
+        </p-progressBar>
+      </div>
+
+      <!-- Products -->
+      <div class="usage-item" *ngIf="usage()?.products">
+        <div class="flex justify-between items-center mb-2">
+          <div class="flex items-center gap-2">
+            <i class="pi pi-box text-xl text-green-500"></i>
+            <span class="font-semibold text-surface-900 dark:text-surface-0">Productos</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-lg font-bold text-surface-900 dark:text-surface-0">
+              {{ usage()!.products.current }} / {{ formatLimit(usage()!.products.limit) }}
+            </span>
+            <p-tag [value]="getUsagePercentage(usage()!.products.current, usage()!.products.limit) + '%'" 
+                   [severity]="getUsageSeverity(usage()!.products.current, usage()!.products.limit)"
+                   *ngIf="!isUnlimited(usage()!.products.limit)">
+            </p-tag>
+          </div>
+        </div>
+        <p-progressBar [value]="getUsagePercentage(usage()!.products.current, usage()!.products.limit)"
+                       [showValue]="false"
+                       [style]="{'height': '8px'}"
+                       *ngIf="!isUnlimited(usage()!.products.limit)">
+        </p-progressBar>
+      </div>
+
+      <!-- Warehouses -->
+      <div class="usage-item" *ngIf="usage()?.warehouses">
+        <div class="flex justify-between items-center mb-2">
+          <div class="flex items-center gap-2">
+            <i class="pi pi-building text-xl text-orange-500"></i>
+            <span class="font-semibold text-surface-900 dark:text-surface-0">Almacenes</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-lg font-bold text-surface-900 dark:text-surface-0">
+              {{ usage()!.warehouses.current }} / {{ formatLimit(usage()!.warehouses.limit) }}
+            </span>
+            <p-tag [value]="getUsagePercentage(usage()!.warehouses.current, usage()!.warehouses.limit) + '%'" 
+                   [severity]="getUsageSeverity(usage()!.warehouses.current, usage()!.warehouses.limit)"
+                   *ngIf="!isUnlimited(usage()!.warehouses.limit)">
+            </p-tag>
+          </div>
+        </div>
+        <p-progressBar [value]="getUsagePercentage(usage()!.warehouses.current, usage()!.warehouses.limit)"
+                       [showValue]="false"
+                       [style]="{'height': '8px'}"
+                       *ngIf="!isUnlimited(usage()!.warehouses.limit)">
+        </p-progressBar>
+      </div>
+
+      <!-- Movements Today -->
+      <div class="usage-item" *ngIf="usage()?.movements_today">
+        <div class="flex justify-between items-center mb-2">
+          <div class="flex items-center gap-2">
+            <i class="pi pi-sync text-xl text-cyan-500"></i>
+            <span class="font-semibold text-surface-900 dark:text-surface-0">Movimientos Hoy</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-lg font-bold text-surface-900 dark:text-surface-0">
+              {{ usage()!.movements_today.current }} / {{ formatLimit(usage()!.movements_today.limit) }}
+            </span>
+            <p-tag [value]="getUsagePercentage(usage()!.movements_today.current, usage()!.movements_today.limit) + '%'" 
+                   [severity]="getUsageSeverity(usage()!.movements_today.current, usage()!.movements_today.limit)"
+                   *ngIf="!isUnlimited(usage()!.movements_today.limit)">
+            </p-tag>
+          </div>
+        </div>
+        <p-progressBar [value]="getUsagePercentage(usage()!.movements_today.current, usage()!.movements_today.limit)"
+                       [showValue]="false"
+                       [style]="{'height': '8px'}"
+                       *ngIf="!isUnlimited(usage()!.movements_today.limit)">
+        </p-progressBar>
+      </div>
+
+      <!-- AI Reports Today -->
+      <div class="usage-item" *ngIf="usage()?.ai_reports_today">
+        <div class="flex justify-between items-center mb-2">
+          <div class="flex items-center gap-2">
+            <i class="pi pi-sparkles text-xl text-purple-500"></i>
+            <span class="font-semibold text-surface-900 dark:text-surface-0">Reportes IA Hoy</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-lg font-bold text-surface-900 dark:text-surface-0">
+              {{ usage()!.ai_reports_today.current }} / {{ formatLimit(usage()!.ai_reports_today.limit) }}
+            </span>
+            <p-tag [value]="getUsagePercentage(usage()!.ai_reports_today.current, usage()!.ai_reports_today.limit) + '%'" 
+                   [severity]="getUsageSeverity(usage()!.ai_reports_today.current, usage()!.ai_reports_today.limit)"
+                   *ngIf="!isUnlimited(usage()!.ai_reports_today.limit)">
+            </p-tag>
+          </div>
+        </div>
+        <p-progressBar [value]="getUsagePercentage(usage()!.ai_reports_today.current, usage()!.ai_reports_today.limit)"
+                       [showValue]="false"
+                       [style]="{'height': '8px'}"
+                       *ngIf="!isUnlimited(usage()!.ai_reports_today.limit)">
+        </p-progressBar>
+      </div>
+    </div>
+
+    <!-- Features -->
+    <h3 class="text-2xl font-bold text-surface-900 dark:text-surface-0 mb-4">
+      Características del Plan
+    </h3>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div class="feature-item" 
+           [class.feature-enabled]="plan()!.features.allow_bom"
+           [class.feature-disabled]="!plan()!.features.allow_bom">
+        <i [class.pi-check-circle]="plan()!.features.allow_bom"
+           [class.pi-times-circle]="!plan()!.features.allow_bom"
+           class="pi text-2xl"></i>
+        <span>Lista de Materiales (BOM)</span>
+      </div>
+
+      <div class="feature-item" 
+           [class.feature-enabled]="plan()!.features.allow_work_orders"
+           [class.feature-disabled]="!plan()!.features.allow_work_orders">
+        <i [class.pi-check-circle]="plan()!.features.allow_work_orders"
+           [class.pi-times-circle]="!plan()!.features.allow_work_orders"
+           class="pi text-2xl"></i>
+        <span>Órdenes de Trabajo</span>
+      </div>
+
+      <div class="feature-item" 
+           [class.feature-enabled]="plan()!.features.allow_mrp"
+           [class.feature-disabled]="!plan()!.features.allow_mrp">
+        <i [class.pi-check-circle]="plan()!.features.allow_mrp"
+           [class.pi-times-circle]="!plan()!.features.allow_mrp"
+           class="pi text-2xl"></i>
+        <span>Planificación MRP</span>
+      </div>
+
+      <div class="feature-item" 
+           [class.feature-enabled]="plan()!.features.allow_forecast"
+           [class.feature-disabled]="!plan()!.features.allow_forecast">
+        <i [class.pi-check-circle]="plan()!.features.allow_forecast"
+           [class.pi-times-circle]="!plan()!.features.allow_forecast"
+           class="pi text-2xl"></i>
+        <span>Pronósticos de Demanda</span>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex flex-wrap gap-3 justify-center">
+      <p-button label="Gestionar Facturación" 
+                icon="pi pi-credit-card" 
+                severity="secondary"
+                [outlined]="true"
+                (onClick)="manageBilling()">
+      </p-button>
+      <p-button label="Cancelar Suscripción" 
+                icon="pi pi-times" 
+                severity="danger"
+                [outlined]="true"
+                (onClick)="cancelSubscription()">
+      </p-button>
+    </div>
+  </div>
+</div>
+
+<p-toast />

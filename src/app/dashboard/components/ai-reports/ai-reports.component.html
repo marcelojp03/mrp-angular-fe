@@ -1,0 +1,174 @@
+<div class="card">
+  <div class="flex justify-between items-start mb-6">
+    <div>
+      <h2 class="text-3xl font-bold text-surface-900 dark:text-surface-0 mb-2">
+        <i class="pi pi-sparkles mr-2"></i>
+        Reportes con IA
+      </h2>
+      <p class="text-surface-600 dark:text-surface-300">
+        Consultas en lenguaje natural con GPT-4o-mini
+      </p>
+    </div>
+
+    <!-- Usage Badge -->
+    <div class="flex flex-col items-end gap-2">
+      <p-tag [value]="usageToday() + ' / ' + (usageLimit() >= 999999 ? '∞' : usageLimit())" 
+             [severity]="getUsageSeverity()"
+             [icon]="'pi pi-chart-bar'">
+      </p-tag>
+      <small class="text-surface-500 dark:text-surface-400">
+        Reportes hoy
+      </small>
+    </div>
+  </div>
+
+  <!-- Query Input -->
+  <div class="mb-6">
+    <label for="query" class="block font-semibold mb-2">
+      Consulta en Lenguaje Natural
+    </label>
+    <textarea pInputTextarea id="query" 
+              [(ngModel)]="query" 
+              [ngModelOptions]="{updateOn: 'change'}"
+              placeholder="Ejemplo: ¿Cuántos productos tengo en stock bajo mínimo?"
+              rows="4"
+              class="w-full query-textarea">
+    </textarea>
+
+    <div class="flex justify-between items-center mt-3">
+      <div class="flex items-center gap-2">
+        <label for="limit" class="font-medium">Límite:</label>
+        <p-inputnumber id="limit" [(ngModel)]="limit" [ngModelOptions]="{updateOn: 'change'}"
+                       [min]="1" [max]="1000" [showButtons]="true"
+                       buttonLayout="horizontal"
+                       inputStyleClass="w-20 text-center">
+        </p-inputnumber>
+        <small class="text-surface-500 dark:text-surface-400">resultados</small>
+      </div>
+
+      <div class="flex gap-2">
+        <p-button label="Limpiar" icon="pi pi-times" 
+                  [outlined]="true" severity="secondary"
+                  (onClick)="clearResults()"
+                  [disabled]="loading()">
+        </p-button>
+        <p-button label="Exportar CSV" icon="pi pi-download" 
+                  severity="help" [outlined]="true"
+                  (onClick)="exportToCSV()"
+                  [disabled]="loading() || !result()"
+                  [loading]="loading()">
+        </p-button>
+        <p-button label="Generar Reporte" icon="pi pi-bolt" 
+                  (onClick)="generateReport()"
+                  [disabled]="loading() || !query().trim()"
+                  [loading]="loading()">
+        </p-button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Example Queries -->
+  <div class="mb-6">
+    <p class="font-semibold mb-3">Ejemplos de Consultas:</p>
+    <div class="flex flex-wrap gap-2">
+      <p-chip *ngFor="let example of exampleQueries"
+              [label]="example"
+              styleClass="cursor-pointer hover:bg-primary-100 transition-colors"
+              (click)="useExample(example)">
+      </p-chip>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div *ngIf="result()" class="mt-6">
+    <p-divider />
+
+    <!-- SQL Display -->
+    <div class="mb-6">
+      <div class="flex justify-between items-center mb-2">
+        <h3 class="text-xl font-semibold text-surface-900 dark:text-surface-0">
+          SQL Generado
+        </h3>
+        <p-tag [value]="result()!.took_ms + ' ms'" severity="info" />
+      </div>
+      <div class="sql-display dark:bg-surface-800">
+        <code class="text-surface-900 dark:text-surface-0">{{ result()!.sql }}</code>
+      </div>
+    </div>
+
+    <!-- Explanation -->
+    <div *ngIf="result()!.explanation" class="mb-6">
+      <p-message severity="info" 
+                 [text]="result()!.explanation"
+                 styleClass="w-full">
+      </p-message>
+    </div>
+
+    <!-- Results Table -->
+    <div>
+      <h3 class="text-xl font-semibold text-surface-900 dark:text-surface-0 mb-3">
+        Resultados ({{ result()!.row_count }})
+      </h3>
+
+      <p-table *ngIf="result()!.row_count > 0" 
+               [value]="getTableData()"
+               [paginator]="true"
+               [rows]="10"
+               [rowsPerPageOptions]="[10, 25, 50]"
+               [showCurrentPageReport]="true"
+               currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} resultados"
+               styleClass="p-datatable-sm">
+        
+        <ng-template pTemplate="header">
+          <tr>
+            <th *ngFor="let col of result()!.columns" pSortableColumn="{{ col }}">
+              {{ col }}
+              <p-sortIcon field="{{ col }}" />
+            </th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-row>
+          <tr>
+            <td *ngFor="let col of result()!.columns">
+              {{ row[col] ?? '—' }}
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td [attr.colspan]="result()!.columns.length" class="text-center">
+              No se encontraron resultados
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+
+      <p-message *ngIf="result()!.row_count === 0" 
+                 severity="warn" 
+                 text="La consulta no retornó resultados"
+                 styleClass="w-full mt-4">
+      </p-message>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading() && !result()" class="text-center py-12">
+    <p-progressSpinner styleClass="w-20 h-20" />
+    <p class="mt-4 text-surface-600 dark:text-surface-300">
+      Generando reporte con IA...
+    </p>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading() && !result()" class="text-center py-12">
+    <i class="pi pi-sparkles text-surface-300 dark:text-surface-600" 
+       style="font-size: 5rem"></i>
+    <p class="text-xl text-surface-600 dark:text-surface-300 mt-4">
+      Escribe una consulta en lenguaje natural para comenzar
+    </p>
+  </div>
+</div>
+
+<p-toast />

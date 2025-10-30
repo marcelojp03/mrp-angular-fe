@@ -1,5 +1,5 @@
-import { Injectable } from '@angular/core';
-import { HttpBackend, HttpClient, HttpHeaders, JsonpClientBackend } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 
@@ -7,6 +7,7 @@ import { environment } from '../../../environments/environment';
 import { HttpApi } from '../http/http-api';
 // import { BitacoraService } from 'src/app/dashboard/bitacora/bitacora.service';
 import { User, LoginRequest, LoginSuccessResponse, LoginErrorResponse, UserData } from '../../auth/interfaces/auth.interface';
+import { SignupRequest, SignupResponse } from '../../auth/interfaces/signup.interface';
 
 const OAUTH_DATA = environment.oauth;
 
@@ -14,15 +15,9 @@ const OAUTH_DATA = environment.oauth;
   providedIn: 'root'
 })
 export class AuthService {
+  private http = inject(HttpClient);
   private apiUrl = environment.backend.host;
   private tokenKey = 'authToken'; // Nombre de la clave
-  constructor(
-    private handler: HttpBackend,
-    private http: HttpClient,
-    // private bitacoraService:BitacoraService
-    ) {
-      this.http = new HttpClient(this.handler);
-    }
 
   register(userRequest: any): Observable<any> {
     const data = {
@@ -38,6 +33,37 @@ export class AuthService {
           return response;
         })
       );
+  }
+
+  /**
+   * Sprint 2: Registro público de nueva organización
+   */
+  signup(request: SignupRequest): Observable<SignupResponse> {
+    const httpOptions = {
+      headers: new HttpHeaders({
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      })
+    };
+
+    return this.http.post<SignupResponse>(`${this.apiUrl}/public/signup`, request, httpOptions)
+      .pipe(
+        map((response: SignupResponse) => {
+          if (response.success && response.data.access_token) {
+            // Guardar datos de autenticación
+            this.saveSignupData(response);
+          }
+          return response;
+        })
+      );
+  }
+
+  // Guardar datos del signup
+  private saveSignupData(response: SignupResponse): void {
+    localStorage.setItem('token', response.data.access_token);
+    localStorage.setItem('org_id', response.data.org_id.toString());
+    localStorage.setItem('user_id', response.data.user_id.toString());
+    localStorage.setItem('plan', JSON.stringify(response.data.plan));
   }
 
   loginWithUserCredentials(email: string, password: string): Observable<LoginSuccessResponse | LoginErrorResponse> {
@@ -79,7 +105,9 @@ export class AuthService {
   // Method to save authentication data
   saveAuthData(response: LoginSuccessResponse): void {
     localStorage.setItem('session', JSON.stringify(response));
-    localStorage.setItem('token', response.data.token);
+    localStorage.setItem('token', response.data.access_token || response.data.token); // Priorizar access_token
+    localStorage.setItem('access_token', response.data.access_token); // Guardar access_token explícitamente
+    localStorage.setItem('refresh_token', response.data.refresh_token); // Guardar refresh_token
     localStorage.setItem('user', JSON.stringify(response.data.user));
     localStorage.setItem('org_id', response.data.org_id.toString());
   }
@@ -109,8 +137,25 @@ export class AuthService {
     localStorage.clear();
   }
 
+  /**
+   * Limpia tokens expirados y fuerza un nuevo login
+   */
+  clearExpiredSession(): void {
+    console.warn('[AuthService] Limpiando sesión expirada...');
+    localStorage.removeItem('token');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('session');
+    localStorage.removeItem('user');
+  }
+
   get accessToken() {
-    return this.getAuthToken();
+    const token = this.getAuthToken();
+    if (!token) {
+      console.warn('[AuthService] No se encontró access_token en localStorage');
+      console.log('[AuthService] Keys en localStorage:', Object.keys(localStorage));
+    }
+    return token;
   }
 
   get refreshToken() {

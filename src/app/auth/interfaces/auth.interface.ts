@@ -32,7 +32,9 @@ export interface UserRole {
 export interface LoginSuccessResponse {
     data: {
         org_id: number;
-        token: string;
+        token: string;  // Mantener para compatibilidad
+        access_token: string;  // Nuevo en Sprint 3
+        refresh_token: string; // Nuevo en Sprint 3
         user: UserData;
     };
     message: string;

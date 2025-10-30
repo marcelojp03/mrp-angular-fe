@@ -1,0 +1,11 @@
+// Responsive adjustments
+@media (max-width: 768px) {
+  .flex.justify-between.items-start {
+    flex-direction: column;
+    gap: 1rem;
+    
+    p-button {
+      width: 100%;
+    }
+  }
+}

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { MenuItem } from 'primeng/api';
 import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -7,6 +7,8 @@ import { AppConfigurator } from './app.configurator';
 import { LayoutService } from '../service/layout.service';
 import { SharedModule } from '../../../shared/shared.module';
 import { AuthService } from '../../services/auth.service';
+import { SubscriptionService } from '../../../dashboard/components/subscription/subscription.service';
+import { SubscriptionResponse } from '../../../dashboard/components/subscription/subscription.interface';
 
 @Component({
     selector: 'app-topbar',
@@ -114,40 +116,101 @@ import { AuthService } from '../../services/auth.service';
         </div>
     </div>`
 })
-export class AppTopbar {
+export class AppTopbar implements OnInit {
     items!: MenuItem[];
     profileItems: MenuItem[] = [];
+    planName = signal<string>('Cargando...');
+    planBadgeClass = signal<string>('success');
     
     constructor(
         public layoutService: LayoutService,
         private authService: AuthService,
-        private router: Router
-    ) {
+        private router: Router,
+        private subscriptionService: SubscriptionService
+    ) {}
+
+    ngOnInit() {
+        this.loadSubscription();
+        this.buildProfileMenu();
+    }
+
+    private loadSubscription() {
+        this.subscriptionService.getSubscription().subscribe({
+            next: (response: SubscriptionResponse) => {
+                if (response.success && response.data?.plan) {
+                    const plan = response.data.plan;
+                    this.planName.set(plan.name);
+                    
+                    // Asignar clase de badge según el plan
+                    switch (plan.code) {
+                        case 'free':
+                            this.planBadgeClass.set('secondary');
+                            break;
+                        case 'starter':
+                            this.planBadgeClass.set('info');
+                            break;
+                        case 'pro':
+                            this.planBadgeClass.set('success');
+                            break;
+                        case 'enterprise':
+                            this.planBadgeClass.set('warning');
+                            break;
+                        default:
+                            this.planBadgeClass.set('secondary');
+                    }
+                    
+                    this.buildProfileMenu();
+                }
+            },
+            error: (err) => {
+                // Si es 404, el endpoint no existe aún - usar plan gratuito por defecto
+                if (err.status === 404) {
+                    console.warn('Subscription endpoint not available (404)');
+                } else if (err.status !== 401) {
+                    console.error('Error loading subscription:', err);
+                }
+                
+                // Valores por defecto
+                this.planName.set('Free');
+                this.planBadgeClass.set('secondary');
+                this.buildProfileMenu();
+            }
+        });
+    }
+
+    private buildProfileMenu() {
         this.profileItems = [
-        {
-            label: 'Perfil',
-            icon: 'pi pi-user',
-            command: () => this.goProfile()
-        },
-        {
-            label: 'Notificaciones',
-            icon: 'pi pi-bell',
-            disabled: true
-        },
-        { separator: true },
-        {
-            label: 'Cerrar sesión',
-            icon: 'pi pi-sign-out',
-            command: () => this.onLogout()
-        }
+            {
+                label: 'Mi Perfil',
+                icon: 'pi pi-user',
+                command: () => this.goProfile()
+            },
+            {
+                label: 'Mi Suscripción',
+                icon: 'pi pi-star',
+                badge: this.planName(),
+                badgeStyleClass: `p-badge-${this.planBadgeClass()}`,
+                command: () => this.goSubscription()
+            },
+            { separator: true },
+            {
+                label: 'Cerrar Sesión',
+                icon: 'pi pi-sign-out',
+                command: () => this.onLogout()
+            }
         ];
     }
 
     toggleDarkMode() {
         this.layoutService.layoutConfig.update((state) => ({ ...state, darkTheme: !state.darkTheme }));
     }
+
     goProfile() {
         this.router.navigate(['/dashboard/perfil']); 
+    }
+
+    goSubscription() {
+        this.router.navigate(['/dashboard/subscription']); 
     }
 
     onLogout() {

@@ -1,0 +1,52 @@
+.info-card {
+  background: linear-gradient(135deg, var(--surface-0) 0%, var(--surface-50) 100%);
+  border: 1px solid var(--surface-200);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  }
+}
+
+:host-context(.dark) .info-card {
+  background: linear-gradient(135deg, var(--surface-800) 0%, var(--surface-700) 100%);
+  border-color: var(--surface-600);
+}
+
+.stat-card {
+  background: var(--surface-0);
+  border: 1px solid var(--surface-200);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-500);
+  }
+}
+
+:host-context(.dark) .stat-card {
+  background: var(--surface-800);
+  border-color: var(--surface-600);
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .flex.justify-center.gap-4 {
+    flex-direction: column;
+    
+    p-button {
+      width: 100%;
+    }
+  }
+
+  .grid.grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,14 +1,38 @@
-<p-toolbar styleClass="mb-6">
-  <ng-template #start>
-    <p-button label="Nuevo" icon="pi pi-plus" severity="secondary" class="mr-2" (onClick)="openNew()" />
-  </ng-template>
+<div class="grid grid-cols-12 gap-6">
+  <!-- Header Card -->
+  <div class="col-span-12">
+    <div class="card">
+      <h2 class="text-3xl font-bold text-surface-900 dark:text-surface-0 m-0">
+        <i class="pi pi-box mr-2 text-blue-500"></i>
+        Productos
+      </h2>
+      <p class="text-muted-color mt-2">
+        Gestión de productos, materias primas y consumibles
+      </p>
+    </div>
+  </div>
 
-  <!-- Si quieres exportar, descomenta
-  <ng-template #end>
-    <p-button label="Exportar" icon="pi pi-upload" severity="secondary" (onClick)="exportCSV()" />
-  </ng-template>
-  -->
-</p-toolbar>
+  <!-- Stats Cards (Opcionales en Patrón A) -->
+  @for (stat of statsCards(); track stat.label) {
+    <div class="col-span-12 md:col-span-6 lg:col-span-3">
+      <app-stats-card [config]="stat" />
+    </div>
+  }
+
+  <!-- Toolbar + Table -->
+  <div class="col-span-12">
+    <div class="card">
+      <p-toolbar styleClass="mb-6">
+        <ng-template #start>
+          <p-button label="Nuevo" icon="pi pi-plus" severity="secondary" class="mr-2" (onClick)="openNew()" />
+        </ng-template>
+
+        <!-- Si quieres exportar, descomenta
+        <ng-template #end>
+          <p-button label="Exportar" icon="pi pi-upload" severity="secondary" (onClick)="exportCSV()" />
+        </ng-template>
+        -->
+      </p-toolbar>
 
 <p-table #dt
   [value]="productos()"
@@ -191,6 +215,10 @@
     </div>
   </ng-template>
 </p-dialog>
+
+    </div>
+  </div>
+</div>
 
 <p-confirmdialog [style]="{ width: '450px' }" />
 <p-toast />

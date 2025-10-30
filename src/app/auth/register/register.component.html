@@ -1,40 +1,91 @@
 <div class="bg-surface-50 dark:bg-surface-950 flex justify-center items-center min-h-screen">
-  <div class="bg-white dark:bg-surface-900 p-6 rounded shadow w-[90%] sm:w-[28rem]">
-    <div class="text-center text-2xl mb-4">Registro</div>
+  <div class="bg-white dark:bg-surface-900 p-8 rounded shadow w-[90%] sm:w-[32rem]">
+    <div class="text-center mb-6">
+      <h2 class="text-3xl font-bold text-surface-900 dark:text-surface-0 mb-2">
+        Crear Organización
+      </h2>
+      <p class="text-surface-600 dark:text-surface-300">
+        Plan seleccionado: <span class="font-semibold text-primary">{{ selectedPlan.toUpperCase() }}</span>
+      </p>
+    </div>
 
     <form [formGroup]="form" (ngSubmit)="form.valid && registerUser()" class="p-fluid">
 
+      <!-- Nombre de la Organización -->
+      <div class="field mb-4">
+        <label for="orgName" class="font-medium">Nombre de la Organización *</label>
+        <input pInputText id="orgName" formControlName="orgName" 
+               placeholder="Mi Empresa SRL" />
+        <small *ngIf="form.controls['orgName'].invalid && form.controls['orgName'].touched" 
+               class="p-error">
+          {{ form.controls['orgName'].hasError('required') ? 'Campo requerido' : 'Mínimo 3 caracteres' }}
+        </small>
+      </div>
+
+      <!-- Nombre Completo del Admin -->
+      <div class="field mb-4">
+        <label for="fullName" class="font-medium">Nombre Completo *</label>
+        <input pInputText id="fullName" formControlName="fullName" 
+               placeholder="Juan Pérez" />
+        <small *ngIf="form.controls['fullName'].invalid && form.controls['fullName'].touched" 
+               class="p-error">
+          {{ form.controls['fullName'].hasError('required') ? 'Campo requerido' : 'Mínimo 3 caracteres' }}
+        </small>
+      </div>
+
       <!-- Correo -->
       <div class="field mb-4">
-        <label for="email">Correo electrónico</label>
-        <input pInputText id="email" type="email" formControlName="email" placeholder="example@email.com" />
-        <small *ngIf="form.controls['email'].invalid && form.controls['email'].touched" class="p-error">
+        <label for="email" class="font-medium">Correo Electrónico *</label>
+        <input pInputText id="email" type="email" formControlName="email" 
+               placeholder="admin@miempresa.com" />
+        <small *ngIf="form.controls['email'].invalid && form.controls['email'].touched" 
+               class="p-error">
           {{ form.controls['email'].hasError('required') ? 'Campo requerido' : 'Correo inválido' }}
         </small>
       </div>
 
       <!-- Contraseña -->
       <div class="field mb-4">
-        <label for="password">Contraseña</label>
-        <p-password id="password" formControlName="password" inputStyleClass="w-full" [toggleMask]="true" [feedback]="true"></p-password>
+        <label for="password" class="font-medium">Contraseña *</label>
+        <p-password id="password" formControlName="password" 
+                    inputStyleClass="w-full" [toggleMask]="true" [feedback]="true"
+                    promptLabel="Ingrese contraseña"
+                    weakLabel="Débil" mediumLabel="Media" strongLabel="Fuerte">
+        </p-password>
+        <small class="text-surface-500 dark:text-surface-400">
+          Mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial
+        </small>
       </div>
 
       <!-- Confirmar Contraseña -->
-      <div class="field mb-4">
-        <label for="passwordConfirmation">Confirmar contraseña</label>
-        <p-password id="passwordConfirmation" formControlName="passwordConfirmation" inputStyleClass="w-full" [toggleMask]="true" [feedback]="false"></p-password>
-        <small *ngIf="form.hasError('notSame')" class="p-error">Las contraseñas no coinciden</small>
+      <div class="field mb-6">
+        <label for="passwordConfirmation" class="font-medium">Confirmar Contraseña *</label>
+        <p-password id="passwordConfirmation" formControlName="passwordConfirmation" 
+                    inputStyleClass="w-full" [toggleMask]="true" [feedback]="false">
+        </p-password>
+        <small *ngIf="form.hasError('notSame') && form.controls['passwordConfirmation'].touched" 
+               class="p-error">
+          Las contraseñas no coinciden
+        </small>
       </div>
 
-      <p-button type="submit" label="Registrarse" class="w-full" [disabled]="!form.valid || (registerSubscription && !registerSubscription.closed)"></p-button>
-
-      <div class="text-center mt-3" *ngIf="registerSubscription && !registerSubscription.closed">
-        <p-progressSpinner styleClass="block mx-auto" strokeWidth="6" style="width:30px;height:30px;"></p-progressSpinner>
-      </div>
+      <p-button type="submit" label="Crear Cuenta" icon="pi pi-check"
+                class="w-full" [disabled]="!form.valid || loading" [loading]="loading">
+      </p-button>
     </form>
 
-    <div class="text-center mt-4">
-      <span>¿Ya tienes una cuenta? <a routerLink="/auth/login" class="text-primary">Inicia sesión</a></span>
+    <div class="text-center mt-6">
+      <p class="text-surface-600 dark:text-surface-300">
+        ¿Ya tienes una cuenta? 
+        <a routerLink="/auth/login" class="text-primary font-semibold hover:underline ml-1">
+          Inicia sesión
+        </a>
+      </p>
+      <p class="text-surface-500 dark:text-surface-400 text-sm mt-3">
+        <a routerLink="/landing" class="hover:text-primary">← Volver al inicio</a>
+      </p>
     </div>
   </div>
 </div>
+
+<p-toast />

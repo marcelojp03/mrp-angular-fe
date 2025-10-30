@@ -1,15 +1,16 @@
-import { Component, OnInit, ViewChild, signal } from '@angular/core';
+import { Component, OnInit, ViewChild, signal, computed } from '@angular/core';
 import { SharedModule } from '../../../../shared/shared.module';
 import { Table } from 'primeng/table';
 import { ConfirmationService, MessageService } from 'primeng/api';
 
 import { ProductoService } from '../product.service';
 import { ProductVM, ProductsResponse, ItemTypeLabels, ProcurementTypeLabels, ProductRequest, ProductUpdateRequest } from '../interfaces/product.interface';
+import { StatsCardComponent, type StatCardConfig } from '../../../../shared/components/stats-card.component';
 
 @Component({
   selector: 'app-product-list',
   standalone: true,
-  imports: [SharedModule],
+  imports: [SharedModule, StatsCardComponent],
   templateUrl: './product-list.component.html'
 })
 export class ProductListComponent implements OnInit {
@@ -18,6 +19,45 @@ export class ProductListComponent implements OnInit {
   submitted = false;
 
   producto: Partial<ProductRequest & { id?: number }> = {};
+
+  // Computed stats para las cards (opcionales en Patrón A)
+  statsCards = computed<StatCardConfig[]>(() => {
+    const data = this.productos();
+    return [
+      {
+        label: 'Total Productos',
+        value: data.length,
+        icon: 'pi-box',
+        color: 'blue',
+        footer: 'Registrados',
+        footerClass: 'text-primary font-medium'
+      },
+      {
+        label: 'Activos',
+        value: data.filter(p => p.status === true).length,
+        icon: 'pi-check-circle',
+        color: 'green',
+        footer: 'Disponibles',
+        footerClass: 'text-green-500 font-medium'
+      },
+      {
+        label: 'Productos Terminados',
+        value: data.filter(p => p.item_type === 'FG').length,
+        icon: 'pi-gift',
+        color: 'purple',
+        footer: 'Para venta',
+        footerClass: 'text-purple-500 font-medium'
+      },
+      {
+        label: 'Materia Prima',
+        value: data.filter(p => p.item_type === 'RM').length,
+        icon: 'pi-inbox',
+        color: 'orange',
+        footer: 'Para fabricar',
+        footerClass: 'text-orange-500 font-medium'
+      }
+    ];
+  });
 
   // Item type and procurement type options
   itemTypeOptions = [

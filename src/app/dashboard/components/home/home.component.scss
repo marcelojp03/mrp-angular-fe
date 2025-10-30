@@ -1,0 +1,77 @@
+.stat-card {
+  transition: all 0.3s ease;
+  border: 1px solid var(--surface-200);
+  
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.stat-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.movement-item {
+  background: var(--surface-50);
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: var(--surface-100);
+    transform: translateX(4px);
+  }
+}
+
+:host ::ng-deep {
+  .dark .movement-item {
+    background: var(--surface-800);
+    
+    &:hover {
+      background: var(--surface-700);
+    }
+  }
+
+  .dark .stat-card {
+    border-color: var(--surface-700);
+  }
+
+  // Asegurar que los encabezados de tabla sean visibles
+  .p-datatable {
+    .p-datatable-thead > tr > th {
+      background: var(--surface-100);
+      color: var(--text-color);
+      font-weight: 600;
+      padding: 1rem;
+      border: 1px solid var(--surface-200);
+    }
+
+    .p-datatable-tbody > tr > td {
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--surface-200);
+    }
+
+    &.p-datatable-sm {
+      .p-datatable-thead > tr > th,
+      .p-datatable-tbody > tr > td {
+        padding: 0.5rem 0.75rem;
+      }
+    }
+  }
+
+  .dark .p-datatable {
+    .p-datatable-thead > tr > th {
+      background: var(--surface-800);
+      border-color: var(--surface-700);
+    }
+
+    .p-datatable-tbody > tr > td {
+      border-color: var(--surface-700);
+    }
+  }
+}

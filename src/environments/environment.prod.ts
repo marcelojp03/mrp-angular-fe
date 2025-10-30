@@ -1,11 +1,11 @@
 export const environment = {
   production: true,
   backend: {
-    host2: 'http://127.0.0.1:8585/api',
-    host3: 'http://localhost:8585/api',
-    host: 'https://207.244.229.255:8510/api',
-    hostx: 'http://207.244.229.255:8520/api',
-    reportes: 'http://207.244.229.255:8530/api/rep',
+    host: '',
+    host2: '',
+    host3: '',
+    hostx: '',
+    reportes: '',
   },
   oauth: {
     host2: 'http://127.0.0.1:8585/api',

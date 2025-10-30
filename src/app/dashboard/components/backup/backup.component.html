@@ -1,0 +1,203 @@
+<div class="card">
+  <div class="flex justify-between items-start mb-6">
+    <div>
+      <h2 class="text-3xl font-bold text-surface-900 dark:text-surface-0 mb-2">
+        <i class="pi pi-database mr-2"></i>
+        Backup de Base de Datos
+      </h2>
+      <p class="text-surface-600 dark:text-surface-300">
+        Genera y descarga respaldos completos de tu información
+      </p>
+    </div>
+
+    <!-- Status Badge -->
+    <p-tag [value]="canBackup() ? 'Disponible' : 'No Disponible'" 
+           [severity]="canBackup() ? 'success' : 'danger'"
+           [icon]="canBackup() ? 'pi pi-check-circle' : 'pi pi-times-circle'">
+    </p-tag>
+  </div>
+
+  <!-- Backup Info -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="info-card">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-surface-500 dark:text-surface-400 text-sm mb-1">Último Backup</p>
+          <p class="text-xl font-semibold text-surface-900 dark:text-surface-0">
+            {{ lastBackupDate() ? (lastBackupDate() | date: 'dd/MM/yyyy HH:mm') : 'Nunca' }}
+          </p>
+        </div>
+        <i class="pi pi-calendar text-3xl text-primary-500"></i>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-surface-500 dark:text-surface-400 text-sm mb-1">Días Desde Último</p>
+          <p class="text-xl font-semibold text-surface-900 dark:text-surface-0">
+            {{ lastBackupDate() ? getDaysSinceLastBackup() : '—' }}
+          </p>
+        </div>
+        <i class="pi pi-clock text-3xl text-orange-500"></i>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-surface-500 dark:text-surface-400 text-sm mb-1">Próximo Disponible</p>
+          <p class="text-xl font-semibold text-surface-900 dark:text-surface-0">
+            {{ getNextBackupDate() ? (getNextBackupDate() | date: 'dd/MM/yyyy') : 'Ahora' }}
+          </p>
+        </div>
+        <i class="pi pi-sync text-3xl text-green-500"></i>
+      </div>
+    </div>
+  </div>
+
+  <p-divider />
+
+  <!-- Action Buttons -->
+  <div class="flex justify-center gap-4 my-6">
+    <p-button label="Generar Backup" 
+              icon="pi pi-refresh" 
+              size="large"
+              (onClick)="generateBackup()"
+              [disabled]="loading() || !canGenerateBackup()"
+              [loading]="loading()">
+    </p-button>
+    
+    <p-button label="Descargar JSON" 
+              icon="pi pi-download" 
+              severity="secondary"
+              size="large"
+              [outlined]="true"
+              (onClick)="downloadBackup()"
+              [disabled]="loading() || !backupData()">
+    </p-button>
+  </div>
+
+  <p-message *ngIf="!canGenerateBackup() && lastBackupDate()" 
+             severity="warn" 
+             styleClass="w-full mt-4">
+    <ng-template pTemplate="content">
+      <div class="flex items-center gap-2">
+        <i class="pi pi-exclamation-triangle"></i>
+        <span>
+          Debes esperar {{ backupLimit() - getDaysSinceLastBackup() }} día(s) más para generar otro backup
+        </span>
+      </div>
+    </ng-template>
+  </p-message>
+
+  <!-- Backup Stats -->
+  <div *ngIf="backupData() && getBackupStats()" class="mt-6">
+    <p-divider />
+    
+    <h3 class="text-2xl font-bold text-surface-900 dark:text-surface-0 mb-4">
+      Estadísticas del Backup
+    </h3>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="stat-card">
+        <i class="pi pi-list text-2xl text-blue-500 mb-2"></i>
+        <p class="text-surface-500 dark:text-surface-400 text-sm">Categorías</p>
+        <p class="text-2xl font-bold text-surface-900 dark:text-surface-0">
+          {{ getBackupStats()!.categories }}
+        </p>
+      </div>
+
+      <div class="stat-card">
+        <i class="pi pi-tags text-2xl text-purple-500 mb-2"></i>
+        <p class="text-surface-500 dark:text-surface-400 text-sm">Subcategorías</p>
+        <p class="text-2xl font-bold text-surface-900 dark:text-surface-0">
+          {{ getBackupStats()!.subcategories }}
+        </p>
+      </div>
+
+      <div class="stat-card">
+        <i class="pi pi-box text-2xl text-green-500 mb-2"></i>
+        <p class="text-surface-500 dark:text-surface-400 text-sm">Productos</p>
+        <p class="text-2xl font-bold text-surface-900 dark:text-surface-0">
+          {{ getBackupStats()!.products }}
+        </p>
+      </div>
+
+      <div class="stat-card">
+        <i class="pi pi-shopping-cart text-2xl text-orange-500 mb-2"></i>
+        <p class="text-surface-500 dark:text-surface-400 text-sm">Inventario</p>
+        <p class="text-2xl font-bold text-surface-900 dark:text-surface-0">
+          {{ getBackupStats()!.inventory }}
+        </p>
+      </div>
+
+      <div class="stat-card">
+        <i class="pi pi-users text-2xl text-cyan-500 mb-2"></i>
+        <p class="text-surface-500 dark:text-surface-400 text-sm">Proveedores</p>
+        <p class="text-2xl font-bold text-surface-900 dark:text-surface-0">
+          {{ getBackupStats()!.suppliers }}
+        </p>
+      </div>
+
+      <div class="stat-card">
+        <i class="pi pi-building text-2xl text-pink-500 mb-2"></i>
+        <p class="text-surface-500 dark:text-surface-400 text-sm">Almacenes</p>
+        <p class="text-2xl font-bold text-surface-900 dark:text-surface-0">
+          {{ getBackupStats()!.warehouses }}
+        </p>
+      </div>
+
+      <div class="stat-card">
+        <i class="pi pi-wallet text-2xl text-yellow-500 mb-2"></i>
+        <p class="text-surface-500 dark:text-surface-400 text-sm">Métodos de Pago</p>
+        <p class="text-2xl font-bold text-surface-900 dark:text-surface-0">
+          {{ getBackupStats()!.payment_methods }}
+        </p>
+      </div>
+
+      <div class="stat-card">
+        <i class="pi pi-user text-2xl text-red-500 mb-2"></i>
+        <p class="text-surface-500 dark:text-surface-400 text-sm">Usuarios</p>
+        <p class="text-2xl font-bold text-surface-900 dark:text-surface-0">
+          {{ getBackupStats()!.users }}
+        </p>
+      </div>
+    </div>
+
+    <div class="mt-6 p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <i class="pi pi-database text-3xl text-primary-500"></i>
+          <div>
+            <p class="text-surface-600 dark:text-surface-300 text-sm">Total de Registros</p>
+            <p class="text-3xl font-bold text-primary-600 dark:text-primary-400">
+              {{ getBackupStats()!.total }}
+            </p>
+          </div>
+        </div>
+        <p-tag [value]="'Generado: ' + (backupData()!.data.backup_timestamp | date: 'dd/MM/yyyy HH:mm:ss')" 
+               severity="info" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading()" class="text-center py-12">
+    <p-progressSpinner styleClass="w-20 h-20" />
+    <p class="mt-4 text-surface-600 dark:text-surface-300">
+      Generando backup completo...
+    </p>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading() && !backupData()" class="text-center py-12">
+    <i class="pi pi-database text-surface-300 dark:text-surface-600" 
+       style="font-size: 5rem"></i>
+    <p class="text-xl text-surface-600 dark:text-surface-300 mt-4">
+      Genera un backup para ver las estadísticas
+    </p>
+  </div>
+</div>
+
+<p-toast />

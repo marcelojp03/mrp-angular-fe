@@ -1,5 +1,5 @@
-import { Injectable } from '@angular/core';
-import { HttpBackend, HttpClient, HttpHeaders } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 
@@ -27,60 +27,51 @@ export interface Inventory {
   providedIn: 'root'
 })
 export class InventoryService {
+  private http = inject(HttpClient);
   private apiURL = environment.backend.host;
   private apiReportesURL = environment.backend.reportes;
 
-  constructor(private handler: HttpBackend, private http: HttpClient) {
-    this.http = new HttpClient(handler);
-  }
-
-  private getHttpOptions() {
-    return {
-      headers: new HttpHeaders({
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      })
-    };
-  }
-
   obtenerListaInventario(): Observable<any> {
-    let url = this.apiURL + "/producto-almacen/listado/todos";
-    return this.http.get<any>(url, this.getHttpOptions());
+    let url = this.apiURL + "/product-warehouses";
+    return this.http.get<any>(url);
   }
 
   buscarPorIds(id_producto: number, id_almacen: number): Observable<any> {
-    let url = this.apiURL + "/producto-almacen/buscar/" + id_producto + "/" + id_almacen;
-    return this.http.get<any>(url, this.getHttpOptions());
+    // El backend no tiene endpoint específico para buscar por IDs
+    // Se puede filtrar del listado completo en el componente
+    let url = this.apiURL + "/product-warehouses";
+    return this.http.get<any>(url);
   }
 
   obtenerStock(id_producto: number): Observable<any> {
-    let url = this.apiURL + "/producto-almacen/obtener-stock/" + id_producto;
-    return this.http.get<any>(url, this.getHttpOptions());
+    let url = this.apiURL + "/stocks?product_id=" + id_producto;
+    return this.http.get<any>(url);
   }
 
   registrarInventario(inventory: Inventory): Observable<any> {
-    let url = this.apiURL + "/producto-almacen/registrar";
-    return this.http.post(url, inventory, this.getHttpOptions());
+    let url = this.apiURL + "/product-warehouses";
+    return this.http.post(url, inventory);
   }
 
   actualizarInventario(inventory: Inventory): Observable<any> {
-    let url = this.apiURL + "/producto-almacen/editar/" + inventory.id_producto + "/" + inventory.id_almacen;
-    return this.http.post(url, inventory, this.getHttpOptions());
+    let url = this.apiURL + "/product-warehouses/" + inventory.id_producto + "/" + inventory.id_almacen;
+    return this.http.put(url, inventory);
   }
 
   eliminarInventario(id_producto: number, id_almacen: number): Observable<any> {
-    let url = this.apiURL + "/producto-almacen/editar/" + id_producto + "/" + id_almacen;
-    return this.http.delete(url, this.getHttpOptions());
+    // El backend no tiene DELETE para product-warehouses según la documentación
+    // Se debe usar PUT con estado inactivo
+    let url = this.apiURL + "/product-warehouses/" + id_producto + "/" + id_almacen;
+    return this.http.put(url, { estado: false });
   }
 
   reactivarInventario(id_producto: number, id_almacen: number): Observable<any> {
-    // Nota: El servicio original tenía un error, debería ser producto-almacen en lugar de subcategorias
-    let url = this.apiURL + "/producto-almacen/reactivar/" + id_producto + "/" + id_almacen;
-    return this.http.delete(url, this.getHttpOptions());
+    let url = this.apiURL + "/product-warehouses/" + id_producto + "/" + id_almacen;
+    return this.http.put(url, { estado: true });
   }
 
   imprimirReporte(datos: any): Observable<any> {
     let url = this.apiReportesURL + "/producto/listado";
-    return this.http.post(url, datos, this.getHttpOptions());
+    return this.http.post(url, datos);
   }
 }
