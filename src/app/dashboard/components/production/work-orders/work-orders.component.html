@@ -1,0 +1,468 @@
+<div class="grid grid-cols-12 gap-6">
+  <!-- Header Card -->
+  <div class="col-span-12">
+    <div class="card">
+      <div class="flex justify-content-between align-items-center">
+        <div>
+          <h2 class="text-3xl font-bold text-surface-900 dark:text-surface-0 m-0">
+            <i class="pi pi-calendar mr-2 text-orange-500"></i>
+            Órdenes de Producción
+          </h2>
+          <p class="text-muted-color mt-2">
+            Gestión de órdenes de trabajo y planificación de producción
+          </p>
+          <p class="text-sm text-muted-color mt-1">
+            <i class="pi pi-info-circle mr-1"></i>
+            <strong>Planificada:</strong> Sin consumo de inventario | 
+            <strong>En Progreso:</strong> Componentes consumidos | 
+            <strong>Finalizada:</strong> Producto agregado al stock
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters Card -->
+  <div class="col-span-12">
+    <div class="card">
+      <div class="grid grid-cols-12 gap-4">
+        <div class="col-span-12 md:col-span-3">
+          <label class="block text-sm font-medium mb-2">Filtrar por Estado</label>
+          <p-select
+            [options]="statusOptions"
+            [(ngModel)]="selectedStatus"
+            (onChange)="loadWorkOrders()"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Todos los estados"
+            fluid
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table Card -->
+  <div class="col-span-12">
+    <div class="card">
+      <!-- Toolbar -->
+      <p-toolbar styleClass="mb-4 gap-2">
+        <ng-template pTemplate="left">
+          <p-button
+            severity="success"
+            label="Nueva Orden"
+            icon="pi pi-plus"
+            class="mr-2"
+            (onClick)="showDialog()"
+          />
+        </ng-template>
+      </p-toolbar>
+
+      <!-- Table -->
+      <p-table
+        #dt
+        [value]="workOrders()"
+        [rows]="10"
+        [paginator]="true"
+        [globalFilterFields]="['reference', 'product_name', 'product_code', 'status', 'assigned_to_name']"
+        [tableStyle]="{ 'min-width': '75rem' }"
+        [rowHover]="true"
+        [loading]="loading()"
+        dataKey="id"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} órdenes"
+        [showCurrentPageReport]="true"
+      >
+        <ng-template pTemplate="caption">
+          <div class="flex justify-content-between align-items-center gap-2">
+            <p-iconField iconPosition="left">
+              <p-inputIcon styleClass="pi pi-search" />
+              <input
+                pInputText
+                type="text"
+                placeholder="Buscar órdenes..."
+                (input)="onGlobalFilter($event)"
+              />
+            </p-iconField>
+            <p-button
+              icon="pi pi-refresh"
+              [rounded]="true"
+              [outlined]="true"
+              severity="secondary"
+              (onClick)="loadWorkOrders()"
+              [loading]="loading()"
+              pTooltip="Actualizar"
+              tooltipPosition="top"
+            />
+          </div>
+        </ng-template>
+
+        <ng-template pTemplate="header">
+          <tr>
+            <th pSortableColumn="reference" style="width: 10rem">
+              Referencia <p-sortIcon field="reference" />
+            </th>
+            <th pSortableColumn="product_name">
+              Producto <p-sortIcon field="product_name" />
+            </th>
+            <th pSortableColumn="quantity" style="width: 8rem">
+              Cantidad <p-sortIcon field="quantity" />
+            </th>
+            <th pSortableColumn="warehouse_name" style="width: 12rem">
+              Almacén <p-sortIcon field="warehouse_name" />
+            </th>
+            <th pSortableColumn="status" style="width: 10rem">
+              Estado <p-sortIcon field="status" />
+            </th>
+            <th pSortableColumn="assigned_to_name" style="width: 12rem">
+              Asignado <p-sortIcon field="assigned_to_name" />
+            </th>
+            <th style="width: 12rem">Fechas</th>
+            <th style="width: 12rem">Acciones</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-wo>
+          <tr>
+            <td>
+              <span class="font-semibold">{{ wo.reference || '#' + wo.id }}</span>
+              @if (wo.bom_version) {
+                <div><small class="text-muted-color">BOM v{{ wo.bom_version }}</small></div>
+              }
+            </td>
+            <td>
+              <div>
+                <div class="font-semibold">{{ wo.product_name }}</div>
+                <small class="text-muted-color">{{ wo.product_code }}</small>
+              </div>
+            </td>
+            <td class="text-center">
+              <span class="font-semibold text-lg">{{ wo.quantity }}</span>
+            </td>
+            <td>{{ wo.warehouse_name }}</td>
+            <td>
+              <p-tag
+                [value]="wo.status"
+                [severity]="getStatusSeverity(wo.status)"
+              />
+            </td>
+            <td>{{ wo.assigned_to_name || '—' }}</td>
+            <td>
+              <div class="text-sm">
+                @if (wo.planned_start) {
+                  <div>
+                    <i class="pi pi-calendar text-muted-color mr-1"></i>
+                    {{ wo.planned_start | date:'dd/MM/yy' }}
+                  </div>
+                }
+                @if (wo.actual_start) {
+                  <div class="text-primary">
+                    <i class="pi pi-play text-primary mr-1"></i>
+                    {{ wo.actual_start | date:'dd/MM/yy HH:mm' }}
+                  </div>
+                }
+              </div>
+            </td>
+            <td>
+              <div class="flex gap-2">
+                <p-button
+                  icon="pi pi-eye"
+                  [rounded]="true"
+                  [outlined]="true"
+                  severity="info"
+                  (onClick)="viewWorkOrder(wo)"
+                  pTooltip="Ver detalles"
+                  tooltipPosition="top"
+                />
+                @if (wo.status === 'Planificada') {
+                  <p-button
+                    icon="pi pi-trash"
+                    [rounded]="true"
+                    [outlined]="true"
+                    severity="danger"
+                    (onClick)="cancelWorkOrder(wo.id!)"
+                    pTooltip="Cancelar"
+                    tooltipPosition="top"
+                  />
+                }
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="8" class="text-center py-8">
+              <i class="pi pi-inbox text-4xl text-muted-color mb-3 block"></i>
+              <p class="text-muted-color">No hay órdenes de producción</p>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+</div>
+
+<!-- Dialog Crear Orden -->
+<p-dialog
+  [(visible)]="displayDialog"
+  [style]="{ width: '90vw', 'max-width': '700px' }"
+  header="Nueva Orden de Producción"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+>
+  <ng-template #content>
+    <!-- Alerta si no hay productos con BOM -->
+    @if (products().length === 0) {
+      <div class="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 rounded">
+        <div class="flex align-items-start gap-2">
+          <i class="pi pi-exclamation-triangle text-yellow-600 mt-1"></i>
+          <div>
+            <p class="font-semibold text-yellow-900 dark:text-yellow-100 m-0">No hay productos disponibles</p>
+            <p class="text-sm text-yellow-800 dark:text-yellow-200 mt-1 mb-0">
+              Para crear órdenes de producción, primero debe crear una <strong>BOM activa</strong> para al menos un producto terminado.
+            </p>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Sección: Información Básica -->
+    <div class="mb-6">
+      <h6 class="text-lg font-semibold mb-4 border-b pb-2">Información Básica</h6>
+      <div class="grid grid-cols-12 gap-4">
+        <!-- Producto -->
+        <div class="col-span-12 md:col-span-8">
+          <label for="product" class="block text-sm font-medium mb-2">
+            Producto * 
+            <i class="pi pi-info-circle text-muted-color text-xs ml-1" 
+               pTooltip="Solo se muestran productos con BOM activa" 
+               tooltipPosition="right"></i>
+          </label>
+          <p-select
+            inputId="product"
+            [options]="products()"
+            [(ngModel)]="currentWO.product_id"
+            optionLabel="name"
+            optionValue="id"
+            placeholder="Seleccione un producto"
+            [filter]="true"
+            filterBy="name,code"
+            fluid
+          >
+            <ng-template pTemplate="item" let-product>
+              <div>
+                <div class="font-semibold">{{ product.code }} - {{ product.name }}</div>
+                <small class="text-muted-color">
+                  {{ product.item_type }}
+                  @if (product.bom_version) {
+                    <span class="ml-2">• BOM v{{ product.bom_version }}</span>
+                  }
+                </small>
+              </div>
+            </ng-template>
+          </p-select>
+          <small class="text-red-500" *ngIf="submitted && !currentWO.product_id">
+            El producto es obligatorio.
+          </small>
+        </div>
+
+        <!-- Cantidad -->
+        <div class="col-span-12 md:col-span-4">
+          <label for="quantity" class="block text-sm font-medium mb-2">Cantidad *</label>
+          <p-inputNumber
+            inputId="quantity"
+            [(ngModel)]="currentWO.quantity"
+            [min]="1"
+            [showButtons]="true"
+            buttonLayout="horizontal"
+            decrementButtonClass="p-button-secondary"
+            incrementButtonClass="p-button-secondary"
+            fluid
+          />
+          <small class="text-red-500" *ngIf="submitted && !currentWO.quantity">
+            La cantidad es obligatoria.
+          </small>
+        </div>
+
+        <!-- Almacén -->
+        <div class="col-span-12 md:col-span-6">
+          <label for="warehouse" class="block text-sm font-medium mb-2">Almacén Destino *</label>
+          <p-select
+            inputId="warehouse"
+            [options]="warehouses()"
+            [(ngModel)]="currentWO.warehouse_id"
+            optionLabel="name"
+            optionValue="id"
+            placeholder="Seleccione almacén"
+            fluid
+          />
+          <small class="text-red-500" *ngIf="submitted && !currentWO.warehouse_id">
+            El almacén es obligatorio.
+          </small>
+        </div>
+
+        <!-- Asignado a -->
+        <div class="col-span-12 md:col-span-6">
+          <label for="assigned" class="block text-sm font-medium mb-2">Asignado a</label>
+          <p-select
+            inputId="assigned"
+            [options]="users()"
+            [(ngModel)]="currentWO.assigned_to"
+            optionLabel="name"
+            optionValue="id"
+            [showClear]="true"
+            placeholder="Sin asignar"
+            fluid
+          />
+        </div>
+
+        <!-- Referencia -->
+        <div class="col-span-12">
+          <label for="reference" class="block text-sm font-medium mb-2">Referencia</label>
+          <input
+            id="reference"
+            pInputText
+            [(ngModel)]="currentWO.reference"
+            placeholder="OP-2025-XXX"
+            fluid
+          />
+        </div>
+
+        <!-- Notas -->
+        <div class="col-span-12">
+          <label for="notes" class="block text-sm font-medium mb-2">Notas</label>
+          <textarea
+            id="notes"
+            pTextarea
+            [(ngModel)]="currentWO.notes"
+            rows="3"
+            placeholder="Notas adicionales sobre esta orden..."
+            fluid
+          ></textarea>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #footer>
+    <div class="flex justify-end gap-3">
+      <p-button
+        label="Cancelar"
+        icon="pi pi-times"
+        severity="secondary"
+        [outlined]="true"
+        (onClick)="hideDialog()"
+      />
+      <p-button
+        label="Crear Orden"
+        icon="pi pi-check"
+        [loading]="saving()"
+        (onClick)="saveWorkOrder()"
+      />
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Dialog Ver Detalles -->
+<p-dialog
+  [(visible)]="displayViewDialog"
+  header="Detalle de Orden de Producción"
+  [modal]="true"
+  [style]="{ width: '90vw', 'max-width': '800px' }"
+  [draggable]="false"
+>
+  <ng-template #content>
+    @if (selectedWO) {
+      <div class="grid grid-cols-12 gap-4">
+        <div class="col-span-12 md:col-span-6">
+          <p class="text-muted-color text-sm mb-1">Referencia</p>
+          <p class="text-xl font-semibold">{{ selectedWO.reference || '#' + selectedWO.id }}</p>
+        </div>
+        <div class="col-span-12 md:col-span-6">
+          <p class="text-muted-color text-sm mb-1">Estado</p>
+          <p-tag
+            [value]="selectedWO.status"
+            [severity]="getStatusSeverity(selectedWO.status)"
+            styleClass="text-lg"
+          />
+        </div>
+        <div class="col-span-12 md:col-span-8">
+          <p class="text-muted-color text-sm mb-1">Producto</p>
+          <div>
+            <p class="font-semibold">{{ selectedWO.product_name }}</p>
+            <small class="text-muted-color">{{ selectedWO.product_code }}</small>
+          </div>
+        </div>
+        <div class="col-span-12 md:col-span-4">
+          <p class="text-muted-color text-sm mb-1">Cantidad</p>
+          <p class="text-2xl font-semibold text-primary">{{ selectedWO.quantity }}</p>
+        </div>
+        <div class="col-span-12 md:col-span-6">
+          <p class="text-muted-color text-sm mb-1">Almacén</p>
+          <p>{{ selectedWO.warehouse_name }}</p>
+        </div>
+        <div class="col-span-12 md:col-span-6">
+          <p class="text-muted-color text-sm mb-1">Asignado a</p>
+          <p>{{ selectedWO.assigned_to_name || '—' }}</p>
+        </div>
+        @if (selectedWO.bom_version) {
+          <div class="col-span-12">
+            <p class="text-muted-color text-sm mb-1">BOM</p>
+            <p>Versión {{ selectedWO.bom_version }}</p>
+          </div>
+        }
+        @if (selectedWO.notes) {
+          <div class="col-span-12">
+            <p class="text-muted-color text-sm mb-1">Notas</p>
+            <p>{{ selectedWO.notes }}</p>
+          </div>
+        }
+        <div class="col-span-12">
+          <h6 class="text-lg font-semibold mb-3 border-b pb-2">Fechas</h6>
+          <div class="grid grid-cols-12 gap-4">
+            @if (selectedWO.planned_start) {
+              <div class="col-span-6">
+                <p class="text-muted-color text-sm mb-1">Inicio Planificado</p>
+                <p>{{ selectedWO.planned_start | date:'dd/MM/yyyy' }}</p>
+              </div>
+            }
+            @if (selectedWO.planned_end) {
+              <div class="col-span-6">
+                <p class="text-muted-color text-sm mb-1">Fin Planificado</p>
+                <p>{{ selectedWO.planned_end | date:'dd/MM/yyyy' }}</p>
+              </div>
+            }
+            @if (selectedWO.actual_start) {
+              <div class="col-span-6">
+                <p class="text-muted-color text-sm mb-1">Inicio Real</p>
+                <p class="text-primary font-semibold">{{ selectedWO.actual_start | date:'dd/MM/yyyy HH:mm' }}</p>
+              </div>
+            }
+            @if (selectedWO.actual_end) {
+              <div class="col-span-6">
+                <p class="text-muted-color text-sm mb-1">Fin Real</p>
+                <p class="text-green-500 font-semibold">{{ selectedWO.actual_end | date:'dd/MM/yyyy HH:mm' }}</p>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
+  </ng-template>
+
+  <ng-template #footer>
+    <div class="flex justify-end">
+      <p-button
+        label="Cerrar"
+        icon="pi pi-times"
+        severity="secondary"
+        [outlined]="true"
+        (onClick)="displayViewDialog = false"
+      />
+    </div>
+  </ng-template>
+</p-dialog>
+
+<p-toast />
+<p-confirmDialog />

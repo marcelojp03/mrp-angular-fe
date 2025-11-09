@@ -1,287 +1,310 @@
-<div class="card">
-  <p-toolbar styleClass="mb-4 gap-2">
-    <ng-template pTemplate="left">
-      <p-button
-        severity="success"
-        label="Nuevo Item"
-        icon="pi pi-plus"
-        class="mr-2"
-        (onClick)="openNew()"
-      />
-      <p-button
-        label="Exportar"
-        icon="pi pi-upload"
-        severity="help"
-        (onClick)="exportCSV()"
-      />
-    </ng-template>
-
-    <ng-template pTemplate="right">
-      <span class="p-input-icon-left">
-        <i class="pi pi-search"></i>
-        <input
-          pInputText
-          type="text"
-          placeholder="Buscar..."
-          (input)="onGlobalFilter(dt, $event)"
-          class="w-full"
-        />
-      </span>
-    </ng-template>
-  </p-toolbar>
-
-  <p-table
-    #dt
-    [value]="supplierItems()"
-    [rows]="10"
-    [paginator]="true"
-    [globalFilterFields]="['product_name', 'supplier_name', 'currency']"
-    [tableStyle]="{ 'min-width': '75rem' }"
-    [loading]="loading"
-    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} entradas"
-    [showCurrentPageReport]="true"
-    [rowsPerPageOptions]="[10, 25, 50]"
-    [sortField]="'product_name'"
-    [sortOrder]="1"
-  >
-    <ng-template pTemplate="header">
-      <tr>
-        <th pSortableColumn="product_name">
-          Producto <p-sortIcon field="product_name" />
-        </th>
-        <th pSortableColumn="supplier_name">
-          Proveedor <p-sortIcon field="supplier_name" />
-        </th>
-        <th pSortableColumn="price">
-          Precio <p-sortIcon field="price" />
-        </th>
-        <th pSortableColumn="currency">
-          Moneda <p-sortIcon field="currency" />
-        </th>
-        <th pSortableColumn="min_order_qty">
-          Cant. Mínima <p-sortIcon field="min_order_qty" />
-        </th>
-        <th pSortableColumn="pack_size">
-          Tamaño Pack <p-sortIcon field="pack_size" />
-        </th>
-        <th pSortableColumn="lead_time_days">
-          Tiempo Entrega <p-sortIcon field="lead_time_days" />
-        </th>
-        <th pSortableColumn="is_active">
-          Estado <p-sortIcon field="is_active" />
-        </th>
-        <th pSortableColumn="is_preferred">
-          Preferido <p-sortIcon field="is_preferred" />
-        </th>
-        <th>Acciones</th>
-      </tr>
-    </ng-template>
-
-    <ng-template pTemplate="body" let-item>
-      <tr>
-        <td>{{ item.product_name }}</td>
-        <td>{{ item.supplier_name }}</td>
-        <td>{{ item.price | currency: item.currency:'symbol':'1.2-2' }}</td>
-        <td>{{ item.currency }}</td>
-        <td>{{ item.min_order_qty }}</td>
-        <td>{{ item.pack_size }}</td>
-        <td>{{ item.lead_time_days }} días</td>
-        <td>
-          <p-tag
-            [value]="getStatusLabel(item.is_active)"
-            [severity]="getStatusSeverity(item.is_active)"
-          />
-        </td>
-        <td>
-          <p-tag
-            [value]="getPreferredLabel(item.is_preferred)"
-            [severity]="getPreferredSeverity(item.is_preferred)"
-          />
-        </td>
-        <td>
-          <p-button
-            icon="pi pi-pencil"
-            class="mr-2"
-            severity="info"
-            [text]="true"
-            [rounded]="true"
-            pTooltip="Editar"
-            (onClick)="editSupplierItem(item)"
-          />
-          <p-button
-            icon="pi pi-star"
-            class="mr-2"
-            severity="help"
-            [text]="true"
-            [rounded]="true"
-            pTooltip="Marcar como preferido"
-            (onClick)="setAsPreferred(item)"
-            *ngIf="!item.is_preferred"
-          />
-          <p-button
-            [icon]="item.is_active ? 'pi pi-eye-slash' : 'pi pi-eye'"
-            class="mr-2"
-            [severity]="item.is_active ? 'secondary' : 'success'"
-            [text]="true"
-            [rounded]="true"
-            [pTooltip]="item.is_active ? 'Desactivar' : 'Activar'"
-            (onClick)="toggleActive(item)"
-          />
-          <p-button
-            icon="pi pi-trash"
-            severity="danger"
-            [text]="true"
-            [rounded]="true"
-            pTooltip="Eliminar"
-            (onClick)="confirmDelete(item)"
-          />
-        </td>
-      </tr>
-    </ng-template>
-
-    <ng-template pTemplate="summary">
-      <div class="flex align-items-center justify-content-between">
-        En total hay {{ supplierItems().length }} items de proveedores.
+<!-- Grid wrapper -->
+<div class="grid grid-cols-12 gap-6">
+  <!-- Header Card -->
+  <div class="col-span-12">
+    <div class="card">
+      <div class="flex justify-between items-center">
+        <div>
+          <h2 class="text-3xl font-bold text-surface-900 dark:text-surface-0 m-0">
+            <i class="pi pi-box mr-2 text-primary"></i>
+            Items de Proveedores
+          </h2>
+          <p class="text-muted-color mt-2">Administra los productos y precios por proveedor</p>
+        </div>
       </div>
-    </ng-template>
-  </p-table>
+    </div>
+  </div>
+
+  <!-- Toolbar + Table Card -->
+  <div class="col-span-12">
+    <div class="card">
+      <!-- Toolbar -->
+      <p-toolbar styleClass="mb-6">
+        <ng-template #start>
+          <p-button label="Nuevo Item" icon="pi pi-plus" (onClick)="openNew()" />
+          <p-button label="Exportar" icon="pi pi-upload" (onClick)="exportCSV()" />
+        </ng-template>
+      </p-toolbar>
+
+      <!-- Table -->
+      <p-table
+        #dt
+        [value]="supplierItems()"
+        [rows]="10"
+        [paginator]="true"
+        [rowsPerPageOptions]="[10, 25, 50]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+        [globalFilterFields]="['product_name', 'supplier_name', 'currency']"
+        [loading]="loading()"
+        [rowHover]="true"
+        dataKey="id"
+      >
+        <ng-template #caption>
+          <div class="flex items-center justify-between">
+            <h5 class="m-0">Listado de Items</h5>
+            <p-iconfield>
+              <p-inputicon styleClass="pi pi-search" />
+              <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" 
+                     placeholder="Buscar..." />
+            </p-iconfield>
+          </div>
+        </ng-template>
+        
+        <ng-template #header>
+          <tr>
+            <th pSortableColumn="product_name">Producto <p-sortIcon field="product_name" /></th>
+            <th pSortableColumn="supplier_name">Proveedor <p-sortIcon field="supplier_name" /></th>
+            <th pSortableColumn="price">Precio <p-sortIcon field="price" /></th>
+            <th pSortableColumn="currency">Moneda <p-sortIcon field="currency" /></th>
+            <th pSortableColumn="min_order_qty">Cant. Mínima <p-sortIcon field="min_order_qty" /></th>
+            <th pSortableColumn="pack_size">Tamaño Pack <p-sortIcon field="pack_size" /></th>
+            <th pSortableColumn="lead_time_days">Tiempo Entrega <p-sortIcon field="lead_time_days" /></th>
+            <th class="text-center">Estado</th>
+            <th class="text-center">Preferido</th>
+            <th class="text-center" style="min-width: 12rem">Acciones</th>
+          </tr>
+        </ng-template>
+        
+        <ng-template #body let-item>
+          <tr>
+            <td><span class="font-medium">{{ item.product_name }}</span></td>
+            <td>{{ item.supplier_name }}</td>
+            <td>{{ item.price | currency: item.currency:'symbol':'1.2-2' }}</td>
+            <td>{{ item.currency }}</td>
+            <td>{{ item.min_order_qty }}</td>
+            <td>{{ item.pack_size }}</td>
+            <td>{{ item.lead_time_days }} días</td>
+            <td class="text-center">
+              <p-tag
+                [value]="getStatusLabel(item.is_active)"
+                [severity]="getStatusSeverity(item.is_active)"
+              />
+            </td>
+            <td class="text-center">
+              <p-tag
+                [value]="getPreferredLabel(item.is_preferred)"
+                [severity]="getPreferredSeverity(item.is_preferred)"
+              />
+            </td>
+            <td class="text-center">
+              <div class="flex gap-2 justify-center">
+                <p-button icon="pi pi-pencil" [rounded]="true" [outlined]="true" 
+                          (click)="editSupplierItem(item)" pTooltip="Editar" />
+                <p-button icon="pi pi-star" severity="help" [rounded]="true" 
+                          [outlined]="true" (click)="setAsPreferred(item)" 
+                          pTooltip="Marcar como preferido" *ngIf="!item.is_preferred" />
+                <p-button [icon]="item.is_active ? 'pi pi-eye-slash' : 'pi pi-eye'" 
+                          [severity]="item.is_active ? 'secondary' : 'success'"
+                          [rounded]="true" [outlined]="true" (click)="toggleActive(item)"
+                          [pTooltip]="item.is_active ? 'Desactivar' : 'Activar'" />
+                <p-button icon="pi pi-trash" severity="danger" [rounded]="true" 
+                          [outlined]="true" (click)="confirmDelete(item)" pTooltip="Eliminar" />
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+        
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="10" class="text-center py-8">
+              <i class="pi pi-inbox text-4xl text-muted-color mb-3 block"></i>
+              <p class="text-muted-color">No hay items de proveedores disponibles</p>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
 </div>
 
-<!-- Dialog para editar/crear supplier item -->
-<p-dialog
-  [(visible)]="supplierItemDialog"
-  [style]="{ width: '550px' }"
-  header="Detalles del Item de Proveedor"
+<!-- Dialog CRUD -->
+<p-dialog 
+  [(visible)]="supplierItemDialog" 
+  [style]="{width: '90vw', 'max-width': '700px'}" 
   [modal]="true"
-  styleClass="p-fluid"
->
-  <ng-template pTemplate="content">
-    <div class="field">
-      <label for="product">Producto *</label>
-      <p-select
-        id="product"
-        [options]="products()"
-        [(ngModel)]="supplierItem.product_id"
-        optionLabel="name"
-        optionValue="id"
-        placeholder="Seleccionar producto"
-        [filter]="true"
-        [showClear]="true"
-        [required]="true"
-      >
-      </p-select>
-    </div>
+  [draggable]="false" 
+  [resizable]="false"
+  [header]="supplierItem.id ? 'Editar Item de Proveedor' : 'Nuevo Item de Proveedor'">
+  
+  <ng-template #content>
+    <!-- Sección 1: Información General -->
+    <div class="mb-6">
+      <h6 class="text-lg font-semibold mb-4 border-b pb-2">Información General</h6>
+      <div class="grid grid-cols-12 gap-4">
+        
+        <div class="col-span-12 md:col-span-6">
+          <label for="product" class="block text-sm font-medium mb-2">
+            Producto *
+          </label>
+          <p-select
+            id="product"
+            [options]="products()"
+            [(ngModel)]="supplierItem.product_id"
+            optionLabel="name"
+            optionValue="id"
+            placeholder="Seleccionar producto"
+            [filter]="true"
+            [showClear]="true"
+            appendTo="body"
+            [panelStyle]="{ 'max-height': '300px' }"
+            fluid
+          />
+          <small class="text-red-500" *ngIf="submitted && !supplierItem.product_id">
+            El producto es obligatorio.
+          </small>
+        </div>
 
-    <div class="field">
-      <label for="supplier">Proveedor *</label>
-      <p-select
-        id="supplier"
-        [options]="suppliers()"
-        [(ngModel)]="supplierItem.supplier_id"
-        optionLabel="name"
-        optionValue="id"
-        placeholder="Seleccionar proveedor"
-        [filter]="true"
-        [showClear]="true"
-        [required]="true"
-      >
-      </p-select>
-    </div>
-
-    <div class="formgrid grid">
-      <div class="field col">
-        <label for="price">Precio *</label>
-        <p-inputNumber
-          id="price"
-          [(ngModel)]="supplierItem.price"
-          mode="decimal"
-          [minFractionDigits]="2"
-          [maxFractionDigits]="2"
-          [min]="0"
-          placeholder="0.00"
-          [required]="true"
-        />
-      </div>
-      <div class="field col">
-        <label for="currency">Moneda</label>
-        <p-select
-          id="currency"
-          [options]="currencies"
-          [(ngModel)]="supplierItem.currency"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="Seleccionar moneda"
-        >
-        </p-select>
+        <div class="col-span-12 md:col-span-6">
+          <label for="supplier" class="block text-sm font-medium mb-2">
+            Proveedor *
+          </label>
+          <p-select
+            id="supplier"
+            [options]="suppliers()"
+            [(ngModel)]="supplierItem.supplier_id"
+            optionLabel="name"
+            optionValue="id"
+            placeholder="Seleccionar proveedor"
+            [filter]="true"
+            [showClear]="true"
+            appendTo="body"
+            [panelStyle]="{ 'max-height': '300px' }"
+            fluid
+          />
+          <small class="text-red-500" *ngIf="submitted && !supplierItem.supplier_id">
+            El proveedor es obligatorio.
+          </small>
+        </div>
       </div>
     </div>
 
-    <div class="formgrid grid">
-      <div class="field col">
-        <label for="minOrderQty">Cantidad Mínima</label>
-        <p-inputNumber
-          id="minOrderQty"
-          [(ngModel)]="supplierItem.min_order_qty"
-          mode="decimal"
-          [min]="0"
-          placeholder="0"
-        />
-      </div>
-      <div class="field col">
-        <label for="packSize">Tamaño Pack</label>
-        <p-inputNumber
-          id="packSize"
-          [(ngModel)]="supplierItem.pack_size"
-          mode="decimal"
-          [min]="1"
-          placeholder="1"
-        />
+    <!-- Sección 2: Precio y Moneda -->
+    <div class="mb-6">
+      <h6 class="text-lg font-semibold mb-4 border-b pb-2">Precio y Moneda</h6>
+      <div class="grid grid-cols-12 gap-4">
+        
+        <div class="col-span-12 md:col-span-6">
+          <label for="price" class="block text-sm font-medium mb-2">Precio *</label>
+          <p-inputnumber 
+            id="price" 
+            [(ngModel)]="supplierItem.price" 
+            mode="decimal"
+            [minFractionDigits]="2"
+            [maxFractionDigits]="2"
+            [min]="0"
+            placeholder="0.00" 
+            fluid 
+          />
+          <small class="text-red-500" *ngIf="submitted && !supplierItem.price">
+            El precio es obligatorio.
+          </small>
+        </div>
+
+        <div class="col-span-12 md:col-span-6">
+          <label for="currency" class="block text-sm font-medium mb-2">Moneda</label>
+          <p-select
+            id="currency"
+            [options]="currencies"
+            [(ngModel)]="supplierItem.currency"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Seleccionar moneda"
+            appendTo="body"
+            fluid
+          />
+        </div>
       </div>
     </div>
 
-    <div class="field">
-      <label for="leadTime">Tiempo de Entrega (días)</label>
-      <p-inputNumber
-        id="leadTime"
-        [(ngModel)]="supplierItem.lead_time_days"
-        [min]="1"
-        placeholder="1"
-      />
+    <!-- Sección 3: Condiciones de Compra -->
+    <div class="mb-6">
+      <h6 class="text-lg font-semibold mb-4 border-b pb-2">Condiciones de Compra</h6>
+      <div class="grid grid-cols-12 gap-4">
+        
+        <div class="col-span-12 md:col-span-4">
+          <label for="minOrderQty" class="block text-sm font-medium mb-2">Cantidad Mínima</label>
+          <p-inputnumber 
+            id="minOrderQty" 
+            [(ngModel)]="supplierItem.min_order_qty" 
+            mode="decimal"
+            [min]="0"
+            placeholder="0" 
+            fluid 
+          />
+        </div>
+
+        <div class="col-span-12 md:col-span-4">
+          <label for="packSize" class="block text-sm font-medium mb-2">Tamaño Pack</label>
+          <p-inputnumber 
+            id="packSize" 
+            [(ngModel)]="supplierItem.pack_size" 
+            mode="decimal"
+            [min]="1"
+            placeholder="1" 
+            fluid 
+          />
+        </div>
+
+        <div class="col-span-12 md:col-span-4">
+          <label for="leadTime" class="block text-sm font-medium mb-2">Tiempo de Entrega (días)</label>
+          <p-inputnumber 
+            id="leadTime" 
+            [(ngModel)]="supplierItem.lead_time_days" 
+            [min]="1"
+            placeholder="1" 
+            fluid 
+          />
+        </div>
+      </div>
     </div>
 
-    <div class="formgrid grid">
-      <div class="field col">
-        <label>Estado</label>
-        <p-toggleSwitch
-          [(ngModel)]="supplierItem.is_active"
-        />
-        <small>{{ supplierItem.is_active ? 'Activo' : 'Inactivo' }}</small>
-      </div>
-      <div class="field col">
-        <label>Preferido</label>
-        <p-toggleSwitch
-          [(ngModel)]="supplierItem.is_preferred"
-        />
-        <small>{{ supplierItem.is_preferred ? 'Proveedor preferido' : 'Proveedor normal' }}</small>
+    <!-- Sección 4: Estado y Preferencia -->
+    <div class="mb-6">
+      <h6 class="text-lg font-semibold mb-4 border-b pb-2">Estado y Preferencia</h6>
+      <div class="grid grid-cols-12 gap-4">
+        
+        <div class="col-span-12 md:col-span-6">
+          <label class="block text-sm font-medium mb-2">Estado</label>
+          <div class="flex items-center mt-2">
+            <p-checkbox [(ngModel)]="supplierItem.is_active" [binary]="true" inputId="status" />
+            <label for="status" class="ml-2">
+              {{ supplierItem.is_active ? 'Activo' : 'Inactivo' }}
+            </label>
+          </div>
+        </div>
+
+        <div class="col-span-12 md:col-span-6">
+          <label class="block text-sm font-medium mb-2">Preferido</label>
+          <div class="flex items-center mt-2">
+            <p-checkbox [(ngModel)]="supplierItem.is_preferred" [binary]="true" inputId="preferred" />
+            <label for="preferred" class="ml-2">
+              {{ supplierItem.is_preferred ? 'Proveedor preferido' : 'Proveedor normal' }}
+            </label>
+          </div>
+        </div>
       </div>
     </div>
   </ng-template>
 
-  <ng-template pTemplate="footer">
-    <p-button
-      label="Cancelar"
-      icon="pi pi-times"
-      [text]="true"
-      (onClick)="hideDialog()"
-    />
-    <p-button
-      label="Guardar"
-      icon="pi pi-check"
-      [text]="true"
-      (onClick)="saveSupplierItem()"
-    />
+  <ng-template #footer>
+    <div class="flex justify-end gap-3">
+      <p-button 
+        label="Cancelar" 
+        icon="pi pi-times" 
+        severity="secondary" 
+        [outlined]="true" 
+        (onClick)="hideDialog()" 
+      />
+      <p-button 
+        label="Guardar" 
+        icon="pi pi-check" 
+        [loading]="submitted" 
+        (onClick)="saveSupplierItem()" 
+      />
+    </div>
   </ng-template>
 </p-dialog>
 
-<p-confirmDialog />
+<p-confirmdialog [style]="{width: '450px'}" />
 <p-toast />

@@ -4,11 +4,10 @@ import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { TagModule } from 'primeng/tag';
-import { HttpClient } from '@angular/common/http';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
-import { environment } from '../../../../environments/environment';
-import { ReorderSuggestion, ReorderSuggestionsResponse } from './reorder-suggestions.interface';
+import { ReorderSuggestion } from './reorder-suggestions.interface';
+import { ReorderSuggestionsService } from './reorder-suggestions.service';
 import { StatsCardComponent, type StatCardConfig } from '../../../shared/components/stats-card.component';
 
 @Component({
@@ -27,9 +26,8 @@ import { StatsCardComponent, type StatCardConfig } from '../../../shared/compone
   templateUrl: './reorder-suggestions.component.html'
 })
 export class ReorderSuggestionsComponent implements OnInit {
-  private http = inject(HttpClient);
+  private suggestionsService = inject(ReorderSuggestionsService);
   private messageService = inject(MessageService);
-  private apiUrl = environment.backend.host;
 
   suggestions = signal<ReorderSuggestion[]>([]);
   loading = signal<boolean>(false);
@@ -82,7 +80,7 @@ export class ReorderSuggestionsComponent implements OnInit {
 
   loadSuggestions() {
     this.loading.set(true);
-    this.http.get<ReorderSuggestionsResponse>(`${this.apiUrl}/stocks/reorder-suggestions`).subscribe({
+    this.suggestionsService.getSuggestions().subscribe({
       next: (response) => {
         if (response.success) {
           this.suggestions.set(response.data);

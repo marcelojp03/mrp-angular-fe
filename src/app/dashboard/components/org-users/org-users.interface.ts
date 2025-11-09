@@ -1,32 +1,44 @@
-// Interfaces para Org Users
+// Interfaces para Users
 
-export interface OrgUser {
+export interface User {
   id: number;
+  name: string;
   email: string;
-  full_name: string;
-  role_id: number;
-  role_name?: string;
+  photo: string | null;
   status: boolean;
-  joined_at: string;
+  roles: UserRole[];
 }
 
-export interface OrgUsersResponse {
-  success: boolean;
-  data: OrgUser[];
-}
-
-export interface AddOrgUserRequest {
-  email: string;
-  full_name: string;
-  password: string;
+export interface UserRole {
   role_id: number;
+  role: string;
+  user_id: number;
 }
 
-export interface AddOrgUserResponse {
+export interface UsersResponse {
   success: boolean;
   message: string;
-  data: {
-    user_id: number;
-    org_id: number;
-  };
+  data: User[];
+}
+
+export interface UserResponse {
+  success: boolean;
+  message: string;
+  data: User;
+}
+
+export interface CreateUserRequest {
+  name: string;
+  email: string;
+  password: string;
+  photo?: string | null;
+  role_ids?: number[]; // Array de IDs de roles
+}
+
+export interface UpdateUserRequest {
+  name?: string;
+  email?: string;
+  status?: boolean;
+  photo?: string | null;
+  role_ids?: number[]; // Array de IDs de roles (reemplaza todos)
 }

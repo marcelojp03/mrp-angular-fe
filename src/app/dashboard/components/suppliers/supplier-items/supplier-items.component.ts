@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, signal } from '@angular/core';
+import { Component, OnInit, ViewChild, signal, inject } from '@angular/core';
 import { SharedModule } from '../../../../shared/shared.module';
 import { Table } from 'primeng/table';
 import { ConfirmationService, MessageService } from 'primeng/api';
@@ -11,14 +11,21 @@ import { SupplierService } from '../supplier.service';
   selector: 'app-supplier-items',
   standalone: true,
   imports: [SharedModule],
+  providers: [MessageService, ConfirmationService],
   templateUrl: './supplier-items.component.html'
 })
 export class SupplierItemsComponent implements OnInit {
+  private supplierItemService = inject(SupplierItemService);
+  private productService = inject(ProductoService);
+  private supplierService = inject(SupplierService);
+  private messageService = inject(MessageService);
+  private confirmationService = inject(ConfirmationService);
+
   supplierItems = signal<SupplierItemVM[]>([]);
   supplierItemDialog = false;
   supplierItem: Partial<SupplierItemVM> = {};
   submitted = false;
-  loading = false;
+  loading = signal(false);
 
   // For dropdowns
   products = signal<any[]>([]);
@@ -45,13 +52,7 @@ export class SupplierItemsComponent implements OnInit {
     { field: 'is_preferred', header: 'Preferido' }
   ];
 
-  constructor(
-    private supplierItemService: SupplierItemService,
-    private productService: ProductoService,
-    private supplierService: SupplierService,
-    private toast: MessageService,
-    private confirm: ConfirmationService
-  ) {}
+  constructor() {}
 
   ngOnInit(): void {
     this.loadSupplierItems();
@@ -60,7 +61,7 @@ export class SupplierItemsComponent implements OnInit {
   }
 
   loadSupplierItems(): void {
-    this.loading = true;
+  this.loading.set(true);
     this.supplierItemService.listar().subscribe({
       next: (res) => {
         console.info("SUPPLIER ITEMS OBTAINED", res);
@@ -69,12 +70,13 @@ export class SupplierItemsComponent implements OnInit {
           product_name: this.getProductName(item.product_id),
           supplier_name: this.getSupplierName(item.supplier_id)
         })) as SupplierItemVM[];
-        this.supplierItems.set(data);
-        this.loading = false;
+  this.supplierItems.set(data);
+  this.loading.set(false);
       },
       error: (err: any) => {
         console.error('Error loading supplier items', err);
-        this.loading = false;
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los items de proveedores' });
+        this.loading.set(false);
       }
     });
   }
@@ -86,7 +88,10 @@ export class SupplierItemsComponent implements OnInit {
         // Update product names in supplier items after products are loaded
         this.updateProductNames();
       },
-      error: (err: any) => console.error('Error loading products', err)
+      error: (err: any) => {
+        console.error('Error loading products', err);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los productos' });
+      }
     });
   }
 
@@ -97,7 +102,10 @@ export class SupplierItemsComponent implements OnInit {
         // Update supplier names in supplier items after suppliers are loaded
         this.updateSupplierNames();
       },
-      error: (err: any) => console.error('Error loading suppliers', err)
+      error: (err: any) => {
+        console.error('Error loading suppliers', err);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los proveedores' });
+      }
     });
   }
 
@@ -164,8 +172,8 @@ export class SupplierItemsComponent implements OnInit {
 
   // CRUD
   saveSupplierItem() {
-    this.submitted = true;
-    if (!this.supplierItem.product_id || !this.supplierItem.supplier_id || !this.supplierItem.price) return;
+  this.submitted = true;
+  if (!this.supplierItem.product_id || !this.supplierItem.supplier_id || !this.supplierItem.price) return;
 
     if (this.supplierItem.id) {
       const payload: SupplierItemUpdateRequest = {
@@ -183,11 +191,14 @@ export class SupplierItemsComponent implements OnInit {
       
       this.supplierItemService.actualizarItem(payload).subscribe({
         next: () => {
-          this.toast.add({ severity: 'success', summary: 'Success', detail: 'Supplier item updated', life: 3000 });
+          this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Item de proveedor actualizado', life: 3000 });
           this.loadSupplierItems();
           this.supplierItemDialog = false;
         },
-        error: (err: any) => console.error('Error updating supplier item', err)
+        error: (err: any) => {
+          console.error('Error updating supplier item', err);
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo actualizar el item' });
+        }
       });
     } else {
       const payload: SupplierItemRequest = {
@@ -204,19 +215,22 @@ export class SupplierItemsComponent implements OnInit {
       
       this.supplierItemService.registrarItem(payload).subscribe({
         next: () => {
-          this.toast.add({ severity: 'success', summary: 'Success', detail: 'Supplier item created', life: 3000 });
+          this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Item de proveedor creado', life: 3000 });
           this.loadSupplierItems();
           this.supplierItemDialog = false;
         },
-        error: (err: any) => console.error('Error creating supplier item', err)
+        error: (err: any) => {
+          console.error('Error creating supplier item', err);
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo crear el item' });
+        }
       });
     }
   }
 
   confirmDelete(row: SupplierItemVM) {
-    this.confirm.confirm({
+    this.confirmationService.confirm({
       message: `¿Eliminar el item del proveedor "${row.supplier_name}" para "${row.product_name}"?`,
-      header: 'Confirmation',
+      header: 'Confirmar Eliminación',
       icon: 'pi pi-exclamation-triangle',
       accept: () => this.deleteSupplierItem(row.id)
     });
@@ -225,40 +239,71 @@ export class SupplierItemsComponent implements OnInit {
   deleteSupplierItem(id: number) {
     this.supplierItemService.eliminarItem(id).subscribe({
       next: () => {
-        this.toast.add({ severity: 'success', summary: 'Success', detail: 'Supplier item deleted', life: 3000 });
+        this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Item de proveedor eliminado', life: 3000 });
         this.supplierItems.set(this.supplierItems().filter(s => s.id !== id));
       },
-      error: (err: any) => console.error('Error deleting supplier item', err)
+      error: (err: any) => {
+        console.error('Error deleting supplier item', err);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo eliminar el item' });
+      }
     });
   }
 
   toggleActive(row: SupplierItemVM) {
     this.supplierItemService.toggleEstado(row.id).subscribe({
-      next: () => {
-        this.toast.add({ 
-          severity: 'info', 
-          summary: 'Updated', 
-          detail: `Supplier item ${row.is_active ? 'deactivated' : 'activated'}`, 
-          life: 3000 
-        });
-        this.loadSupplierItems();
+      next: (response) => {
+        if (response.success) {
+          const newStatus = response.data.is_active;
+          this.messageService.add({ 
+            severity: 'info', 
+            summary: 'Estado Actualizado', 
+            detail: `Item ${newStatus ? 'activado' : 'desactivado'} correctamente`, 
+            life: 3000 
+          });
+          this.loadSupplierItems();
+        }
       },
-      error: (err: any) => console.error('Error toggling supplier item status', err)
+      error: (err: any) => {
+        console.error('Error toggling supplier item status', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: err.error?.message || 'No se pudo cambiar el estado',
+          life: 3000
+        });
+      }
     });
   }
 
   setAsPreferred(row: SupplierItemVM) {
-    this.supplierItemService.marcarComoPreferido(row.id).subscribe({
-      next: () => {
-        this.toast.add({ 
-          severity: 'success', 
-          summary: 'Success', 
-          detail: 'Supplier item marked as preferred', 
-          life: 3000 
+    this.confirmationService.confirm({
+      message: `¿Marcar a "${row.supplier_name}" como proveedor preferido para "${row.product_name}"?\n\nEsto desmarcará otros proveedores preferidos para este producto.`,
+      header: 'Confirmar Proveedor Preferido',
+      icon: 'pi pi-star',
+      accept: () => {
+        this.supplierItemService.marcarComoPreferido(row.id).subscribe({
+          next: (response) => {
+            if (response.success) {
+              this.messageService.add({ 
+                severity: 'success', 
+                summary: 'Proveedor Preferido', 
+                detail: `"${row.supplier_name}" marcado como preferido para "${row.product_name}"`, 
+                life: 4000 
+              });
+              this.loadSupplierItems();
+            }
+          },
+          error: (err: any) => {
+            console.error('Error setting preferred supplier item', err);
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: err.error?.message || 'No se pudo marcar como preferido',
+              life: 3000
+            });
+          }
         });
-        this.loadSupplierItems();
-      },
-      error: (err: any) => console.error('Error setting preferred supplier item', err)
+      }
     });
   }
 

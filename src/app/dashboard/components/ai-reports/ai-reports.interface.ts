@@ -2,25 +2,29 @@
 
 export interface AIReportRequest {
   query: string;
+  format?: 'json' | 'csv' | 'excel' | 'pdf';
   limit?: number;
+  dry_run?: boolean;
 }
 
 export interface AIReportResponse {
-  success: boolean;
+  success: boolean;  // El backend usa 'success' booleano, no 'status' string
   message: string;
   data: {
     sql: string;
     columns: string[];
-    rows: any[][];
-    row_count: number;
-    explanation: string;
-    took_ms: number;
-  };
+    rows: any[];
+    interpretation: string;
+    summary: {
+      total_rows: number;
+      execution_time_ms: number;
+    };
+    export_options: string[];
+  } | null;
 }
 
 export interface AIReportError {
-  success: false;
+  status: 'error';
   message: string;
-  code: number;
-  details?: string;
+  data: null;
 }

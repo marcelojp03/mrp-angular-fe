@@ -1,0 +1,507 @@
+<div class="grid grid-cols-12 gap-6">
+  <!-- Header Card -->
+  <div class="col-span-12">
+    <div class="card">
+      <div class="flex justify-content-between align-items-center">
+        <div>
+          <h2 class="text-3xl font-bold text-surface-900 dark:text-surface-0 m-0">
+            <i class="pi pi-list mr-2 text-purple-500"></i>
+            Lista de Materiales (BOM)
+          </h2>
+          <p class="text-muted-color mt-2">
+            Gestión de estructuras de productos y componentes
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table Card -->
+  <div class="col-span-12">
+    <div class="card">
+      <!-- Toolbar -->
+      <p-toolbar styleClass="mb-4 gap-2">
+        <ng-template pTemplate="left">
+          <p-button
+            severity="success"
+            label="Nueva BOM"
+            icon="pi pi-plus"
+            class="mr-2"
+            (onClick)="showDialog()"
+          />
+        </ng-template>
+      </p-toolbar>
+
+      <!-- Table -->
+      <p-table
+        #dt
+        [value]="boms()"
+        [rows]="10"
+        [paginator]="true"
+        [globalFilterFields]="['product_name', 'product_code', 'version', 'description']"
+        [tableStyle]="{ 'min-width': '75rem' }"
+        [rowHover]="true"
+        [loading]="loading()"
+        dataKey="id"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} BOMs"
+        [showCurrentPageReport]="true"
+      >
+        <ng-template pTemplate="caption">
+          <div class="flex justify-content-between align-items-center gap-2">
+            <p-iconField iconPosition="left">
+              <p-inputIcon styleClass="pi pi-search" />
+              <input
+                pInputText
+                type="text"
+                placeholder="Buscar BOMs..."
+                (input)="onGlobalFilter($event)"
+              />
+            </p-iconField>
+            <p-button
+              icon="pi pi-refresh"
+              [rounded]="true"
+              [outlined]="true"
+              severity="secondary"
+              (onClick)="loadBOMs()"
+              [loading]="loading()"
+              pTooltip="Actualizar"
+              tooltipPosition="top"
+            />
+          </div>
+        </ng-template>
+
+        <ng-template pTemplate="header">
+          <tr>
+            <th pSortableColumn="product_name">
+              Producto <p-sortIcon field="product_name" />
+            </th>
+            <th pSortableColumn="version" style="width: 8rem">
+              Versión <p-sortIcon field="version" />
+            </th>
+            <th style="width: 10rem">Componentes</th>
+            <th pSortableColumn="is_active" style="width: 8rem">
+              Estado <p-sortIcon field="is_active" />
+            </th>
+            <th>Descripción</th>
+            <th style="width: 12rem">Acciones</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-bom>
+          <tr>
+            <td>
+              <div>
+                <div class="font-semibold">{{ bom.product_name }}</div>
+                <small class="text-muted-color">{{ bom.product_code }}</small>
+              </div>
+            </td>
+            <td>
+              <p-tag [value]="bom.version" severity="info" />
+            </td>
+            <td class="text-center">
+              <p-tag
+                [value]="(bom.components?.length || 0).toString()"
+                severity="secondary"
+                icon="pi pi-box"
+              />
+            </td>
+            <td>
+              <p-tag
+                [value]="bom.is_active ? 'ACTIVA' : 'INACTIVA'"
+                [severity]="bom.is_active ? 'success' : 'secondary'"
+              />
+            </td>
+            <td>
+              <span class="text-sm">{{ bom.description || '—' }}</span>
+            </td>
+            <td>
+              <div class="flex gap-2">
+                <p-button
+                  icon="pi pi-eye"
+                  [rounded]="true"
+                  [outlined]="true"
+                  severity="info"
+                  (onClick)="viewBOM(bom)"
+                  pTooltip="Ver detalles"
+                  tooltipPosition="top"
+                />
+                <p-button
+                  *ngIf="!bom.is_active"
+                  icon="pi pi-check"
+                  [rounded]="true"
+                  [outlined]="true"
+                  severity="success"
+                  (onClick)="activateBOM(bom.id!)"
+                  pTooltip="Activar BOM"
+                  tooltipPosition="top"
+                />
+                <p-button
+                  *ngIf="!bom.is_active"
+                  icon="pi pi-pencil"
+                  [rounded]="true"
+                  [outlined]="true"
+                  (onClick)="editBOM(bom)"
+                  pTooltip="Editar"
+                  tooltipPosition="top"
+                />
+                <p-button
+                  *ngIf="!bom.is_active"
+                  icon="pi pi-trash"
+                  [rounded]="true"
+                  [outlined]="true"
+                  severity="danger"
+                  (onClick)="deleteBOM(bom.id!)"
+                  pTooltip="Eliminar"
+                  tooltipPosition="top"
+                />
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="6" class="text-center py-8">
+              <i class="pi pi-inbox text-4xl text-muted-color mb-3 block"></i>
+              <p class="text-muted-color">No hay BOMs registradas</p>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+</div>
+
+<!-- Dialog Crear/Editar BOM -->
+<p-dialog
+  [(visible)]="displayDialog"
+  [style]="{ width: '90vw', 'max-width': '900px' }"
+  [header]="editMode() ? 'Editar BOM' : 'Nueva BOM'"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+>
+  <ng-template #content>
+    <!-- Sección: Información Básica -->
+    <div class="mb-6">
+      <h6 class="text-lg font-semibold mb-4 border-b pb-2">Información Básica</h6>
+      <div class="grid grid-cols-12 gap-4">
+        <!-- Producto -->
+        <div class="col-span-12 md:col-span-8">
+          <label for="product" class="block text-sm font-medium mb-2">Producto *</label>
+          <p-select
+            inputId="product"
+            [options]="products()"
+            [(ngModel)]="currentBOM.product_id"
+            optionLabel="name"
+            optionValue="id"
+            placeholder="Seleccione un producto"
+            [filter]="true"
+            filterBy="name,code"
+            appendTo="body"
+            fluid
+          >
+            <ng-template pTemplate="selectedItem" let-product>
+              <span *ngIf="product">{{ product.code }} - {{ product.name }}</span>
+            </ng-template>
+            <ng-template pTemplate="item" let-product>
+              <div>
+                <div class="font-semibold">{{ product.code }} - {{ product.name }}</div>
+                <small class="text-muted-color">{{ product.item_type }}</small>
+              </div>
+            </ng-template>
+          </p-select>
+          <small class="text-red-500" *ngIf="submitted && !currentBOM.product_id">
+            El producto es obligatorio.
+          </small>
+        </div>
+
+        <!-- Versión -->
+        <div class="col-span-12 md:col-span-4">
+          <label for="version" class="block text-sm font-medium mb-2">Versión *</label>
+          <input
+            id="version"
+            pInputText
+            [(ngModel)]="currentBOM.version"
+            placeholder="1.0"
+            fluid
+          />
+          <small class="text-red-500" *ngIf="submitted && !currentBOM.version">
+            La versión es obligatoria.
+          </small>
+        </div>
+
+        <!-- Descripción -->
+        <div class="col-span-12">
+          <label for="description" class="block text-sm font-medium mb-2">Descripción</label>
+          <textarea
+            id="description"
+            pTextarea
+            [(ngModel)]="currentBOM.description"
+            rows="2"
+            placeholder="Descripción de la BOM..."
+            fluid
+          ></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sección: Configuración -->
+    <div class="mb-6">
+      <h6 class="text-lg font-semibold mb-4 border-b pb-2">Configuración</h6>
+      <div class="grid grid-cols-12 gap-4">
+        <!-- Estado -->
+        <div class="col-span-12 md:col-span-6">
+          <label class="block text-sm font-medium mb-2">Estado</label>
+          <div class="flex items-center mt-2">
+            <p-checkbox
+              [(ngModel)]="currentBOM.is_active"
+              [binary]="true"
+              inputId="active"
+            />
+            <label for="active" class="ml-2">BOM activa (solo una activa por producto)</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sección: Componentes -->
+    <div class="mb-6">
+      <div class="flex justify-content-between align-items-center mb-4">
+        <h6 class="text-lg font-semibold m-0 border-b pb-2">Componentes *</h6>
+        <p-button
+          label="Agregar Componente"
+          icon="pi pi-plus"
+          size="small"
+          (onClick)="addComponent()"
+        />
+      </div>
+
+      <div class="overflow-visible">
+        <p-table 
+          [value]="currentBOM.components" 
+          styleClass="p-datatable-sm"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th style="min-width: 250px">Componente</th>
+              <th style="width: 120px">Cantidad</th>
+              <th style="width: 100px">Scrap %</th>
+              <th style="width: 100px">Total</th>
+              <th style="width: 120px">Unidad</th>
+              <th style="min-width: 200px">Notas</th>
+              <th style="width: 60px"></th>
+            </tr>
+          </ng-template>
+        <ng-template pTemplate="body" let-comp let-i="rowIndex">
+          <tr>
+            <td>
+              <p-select
+                [options]="products()"
+                [(ngModel)]="comp.component_id"
+                optionLabel="name"
+                optionValue="id"
+                placeholder="Seleccione componente"
+                [filter]="true"
+                filterBy="name,code"
+                appendTo="body"
+                [style]="{'min-width': '250px'}"
+                [panelStyle]="{'max-height': '300px'}"
+                fluid
+              >
+                <ng-template pTemplate="selectedItem" let-product>
+                  <span *ngIf="product">{{ product.code }} - {{ product.name }}</span>
+                </ng-template>
+                <ng-template pTemplate="item" let-product>
+                  <div class="py-2">
+                    <div class="font-semibold">{{ product.code }} - {{ product.name }}</div>
+                    <small class="text-muted-color">{{ product.item_type }}</small>
+                  </div>
+                </ng-template>
+              </p-select>
+            </td>
+            <td>
+              <p-inputNumber
+                [(ngModel)]="comp.quantity"
+                mode="decimal"
+                [minFractionDigits]="2"
+                [min]="0.01"
+                fluid
+              />
+            </td>
+            <td>
+              <p-inputNumber
+                [(ngModel)]="comp.scrap_percentage"
+                mode="decimal"
+                [minFractionDigits]="1"
+                [min]="0"
+                [max]="100"
+                suffix="%"
+                fluid
+              />
+            </td>
+            <td>
+              <span class="font-semibold">
+                {{ (comp.quantity * (1 + (comp.scrap_percentage || 0) / 100)).toFixed(2) }}
+              </span>
+            </td>
+            <td>
+              <p-select
+                [options]="units()"
+                [(ngModel)]="comp.unit_id"
+                optionLabel="code"
+                optionValue="id"
+                placeholder="Unidad"
+                appendTo="body"
+                [style]="{'min-width': '100px'}"
+                fluid
+              >
+                <ng-template pTemplate="selectedItem" let-unit>
+                  <span *ngIf="unit">{{ unit.code }}</span>
+                </ng-template>
+                <ng-template pTemplate="item" let-unit>
+                  <div>
+                    <span class="font-semibold">{{ unit.code }}</span>
+                    <small class="block text-muted-color">{{ unit.description }}</small>
+                  </div>
+                </ng-template>
+              </p-select>
+            </td>
+            <td>
+              <input
+                pInputText
+                [(ngModel)]="comp.notes"
+                placeholder="Notas opcionales"
+                fluid
+              />
+            </td>
+            <td>
+              <p-button
+                icon="pi pi-trash"
+                [rounded]="true"
+                [text]="true"
+                severity="danger"
+                size="small"
+                (onClick)="removeComponent(i)"
+              />
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="7" class="text-center py-4">
+              <p class="text-muted-color">No hay componentes. Click en "Agregar Componente"</p>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+      </div>
+      <small class="text-red-500" *ngIf="submitted && currentBOM.components.length === 0">
+        Debe agregar al menos un componente.
+      </small>
+    </div>
+  </ng-template>
+
+  <ng-template #footer>
+    <div class="flex justify-end gap-3">
+      <p-button
+        label="Cancelar"
+        icon="pi pi-times"
+        severity="secondary"
+        [outlined]="true"
+        (onClick)="hideDialog()"
+      />
+      <p-button
+        label="Guardar BOM"
+        icon="pi pi-check"
+        [loading]="saving()"
+        (onClick)="saveBOM()"
+      />
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Dialog Ver BOM -->
+<p-dialog
+  [(visible)]="displayViewDialog"
+  header="Detalle de BOM"
+  [modal]="true"
+  [style]="{ width: '90vw', 'max-width': '800px' }"
+  [draggable]="false"
+>
+  <ng-template #content>
+    <div *ngIf="selectedBOM" class="grid grid-cols-12 gap-4">
+      <div class="col-span-12 md:col-span-6">
+        <p class="text-muted-color text-sm mb-1">Producto</p>
+        <div>
+          <p class="text-xl font-semibold">{{ selectedBOM.product_name }}</p>
+          <small class="text-muted-color">{{ selectedBOM.product_code }}</small>
+        </div>
+      </div>
+      <div class="col-span-12 md:col-span-3">
+        <p class="text-muted-color text-sm mb-1">Versión</p>
+        <p-tag [value]="selectedBOM.version" severity="info" />
+      </div>
+      <div class="col-span-12 md:col-span-3">
+        <p class="text-muted-color text-sm mb-1">Estado</p>
+        <p-tag
+          [value]="selectedBOM.is_active ? 'ACTIVA' : 'INACTIVA'"
+          [severity]="selectedBOM.is_active ? 'success' : 'secondary'"
+        />
+      </div>
+      <div class="col-span-12" *ngIf="selectedBOM.description">
+        <p class="text-muted-color text-sm mb-1">Descripción</p>
+        <p>{{ selectedBOM.description }}</p>
+      </div>
+
+      <div class="col-span-12">
+        <h3 class="text-xl font-semibold mb-3 border-b pb-2">Componentes</h3>
+        <p-table [value]="selectedBOM.components" styleClass="p-datatable-sm">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Secuencia</th>
+              <th>Componente</th>
+              <th>Cantidad</th>
+              <th>Scrap</th>
+              <th>Total Requerido</th>
+              <th>Notas</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-comp>
+            <tr>
+              <td>{{ comp.sequence }}</td>
+              <td>
+                <div>
+                  <div class="font-semibold">{{ comp.component_name }}</div>
+                  <small class="text-muted-color">{{ comp.component_code }}</small>
+                </div>
+              </td>
+              <td>{{ comp.quantity }} {{ comp.unit_code }}</td>
+              <td>{{ comp.scrap_percentage }}%</td>
+              <td class="font-semibold text-primary">
+                {{ (comp.quantity * (1 + comp.scrap_percentage / 100)).toFixed(2) }}
+                {{ comp.unit_code }}
+              </td>
+              <td>{{ comp.notes || '—' }}</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #footer>
+    <div class="flex justify-end">
+      <p-button
+        label="Cerrar"
+        icon="pi pi-times"
+        severity="secondary"
+        [outlined]="true"
+        (onClick)="displayViewDialog = false"
+      />
+    </div>
+  </ng-template>
+</p-dialog>
+
+<p-toast />
+<p-confirmDialog />

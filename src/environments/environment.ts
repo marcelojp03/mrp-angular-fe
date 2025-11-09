@@ -8,7 +8,7 @@ export const environment = {
     host: 'http://localhost:4646/api',
     host3: '',
     host4: '',
-    reportes: 'http://localhost:8530/api/rep',
+    reportes: '',
   },
   oauth: {
     host: 'http://localhost:8585/api',

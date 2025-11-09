@@ -1,0 +1,140 @@
+<p-toast />
+
+<div class="grid grid-cols-12 gap-8">
+  <!-- Header -->
+  <div class="col-span-12">
+    <div class="card">
+      <h2 class="text-3xl font-bold text-surface-900 dark:text-surface-0 m-0">
+        <i class="pi pi-exclamation-triangle mr-2 text-red-500"></i>
+        Alertas de Stock Bajo
+      </h2>
+      <p class="text-muted-color mt-2">
+        Productos con stock por debajo del mínimo establecido
+      </p>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="col-span-12">
+    <div class="card">
+      @if (loading()) {
+        <div class="text-center py-8">
+          <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
+          <p class="text-muted-color mt-4">Cargando alertas...</p>
+        </div>
+      } @else if (stocks() && stocks()!.length > 0) {
+        <p-table
+          [value]="stocks()!"
+          [paginator]="true"
+          [rows]="10"
+          [rowsPerPageOptions]="[10, 25, 50]"
+          [showCurrentPageReport]="true"
+          currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} alertas"
+          responsiveLayout="scroll"
+          [globalFilterFields]="['code', 'name', 'description']"
+        >
+          <ng-template #caption>
+            <div class="flex items-center justify-end">
+              <button
+                pButton
+                icon="pi pi-refresh"
+                label="Actualizar"
+                class="p-button-outlined p-button-sm"
+                (click)="loadStocks()"
+                [loading]="loading()"
+              ></button>
+            </div>
+          </ng-template>
+          
+          <ng-template #header>
+            <tr>
+              <th pSortableColumn="code">
+                Código <p-sortIcon field="code"></p-sortIcon>
+              </th>
+              <th pSortableColumn="name">
+                Producto <p-sortIcon field="name"></p-sortIcon>
+              </th>
+              <th pSortableColumn="item_type">
+                Tipo <p-sortIcon field="item_type"></p-sortIcon>
+              </th>
+              <th pSortableColumn="current_stock" class="text-right">
+                Stock Actual <p-sortIcon field="current_stock"></p-sortIcon>
+              </th>
+              <th pSortableColumn="min_stock" class="text-right">
+                Stock Mínimo <p-sortIcon field="min_stock"></p-sortIcon>
+              </th>
+              <th class="text-right">
+                Faltante
+              </th>
+              <th pSortableColumn="unit_code" class="text-center">
+                Unidad <p-sortIcon field="unit_code"></p-sortIcon>
+              </th>
+              <th class="text-center">Severidad</th>
+            </tr>
+          </ng-template>
+          
+          <ng-template #body let-item>
+            <tr>
+              <td>
+                <span class="font-semibold">{{ item.code }}</span>
+              </td>
+              <td>
+                <div class="font-medium">{{ item.name }}</div>
+                <div class="text-muted-color text-sm">{{ item.description }}</div>
+              </td>
+              <td>
+                <p-tag 
+                  [value]="item.item_type" 
+                  [severity]="item.item_type === 'FG' ? 'success' : item.item_type === 'RM' ? 'info' : 'warn'" />
+              </td>
+              <td class="text-right">
+                <p-tag [value]="item.current_stock.toString()" severity="danger" />
+              </td>
+              <td class="text-right">
+                <span class="font-medium">{{ item.min_stock }}</span>
+              </td>
+              <td class="text-right">
+                <span class="text-red-600 dark:text-red-400 font-bold">
+                  {{ item.min_stock - item.current_stock }}
+                </span>
+              </td>
+              <td class="text-center">
+                <p-tag [value]="item.unit_code" severity="secondary" />
+              </td>
+              <td class="text-center">
+                <p-tag
+                  [value]="getSeverityLabel(item.min_stock - item.current_stock, item.min_stock)"
+                  [severity]="getSeverity(item.min_stock - item.current_stock, item.min_stock)"
+                ></p-tag>
+              </td>
+            </tr>
+          </ng-template>
+          
+          <ng-template #emptymessage>
+            <tr>
+              <td colspan="8" class="text-center py-8">
+                <i class="pi pi-check-circle text-6xl text-green-500 mb-3 block"></i>
+                <p class="text-muted-color">No hay productos con stock bajo</p>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      }
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  @if (!loading() && (!stocks() || stocks()!.length === 0)) {
+    <div class="col-span-12">
+      <div class="card">
+        <div class="text-center py-8">
+          <i class="pi pi-check-circle text-6xl text-green-500 mb-4 block"></i>
+          <h3 class="text-xl font-semibold text-surface-900 dark:text-surface-0 mb-2">
+            ¡Todo el stock está en niveles óptimos!
+          </h3>
+          <p class="text-muted-color">No hay productos con stock por debajo del mínimo</p>
+        </div>
+      </div>
+    </div>
+  }
+</div>

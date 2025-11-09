@@ -1,0 +1,223 @@
+<div class="grid grid-cols-12 gap-6">
+  <!-- Header Card -->
+  <div class="col-span-12">
+    <div class="card">
+      <h2 class="text-3xl font-bold text-surface-900 dark:text-surface-0 mb-2">
+        <i class="pi pi-shield mr-2 text-primary"></i>
+        Roles
+      </h2>
+      <p class="text-muted-color">Gestión de roles y permisos del sistema</p>
+    </div>
+  </div>
+
+  <!-- Table Card -->
+  <div class="col-span-12">
+    <div class="card">
+      <!-- Toolbar -->
+      <p-toolbar styleClass="mb-6 gap-2">
+        <ng-template #start>
+          <p-button 
+            label="Nuevo Rol" 
+            icon="pi pi-plus" 
+            (onClick)="showDialog()"
+            [rounded]="true">
+          </p-button>
+        </ng-template>
+
+        <ng-template #end>
+          <p-button 
+            icon="pi pi-refresh" 
+            (onClick)="loadRoles()"
+            [rounded]="true"
+            [outlined]="true"
+            [loading]="loading()">
+          </p-button>
+        </ng-template>
+      </p-toolbar>
+
+      <!-- Table -->
+      <p-table 
+        [value]="roles()" 
+        [paginator]="true" 
+        [rows]="10"
+        [rowsPerPageOptions]="[10, 25, 50]"
+        [loading]="loading()"
+        [rowHover]="true"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} roles"
+        styleClass="p-datatable-sm">
+
+        <ng-template pTemplate="caption">
+          <div class="flex items-center gap-3">
+            <i class="pi pi-search text-surface-400"></i>
+            <p-iconfield iconPosition="left" class="flex-1">
+              <input 
+                pInputText 
+                type="text" 
+                placeholder="Buscar roles..." 
+                class="w-full" />
+            </p-iconfield>
+          </div>
+        </ng-template>
+        
+        <ng-template pTemplate="header">
+          <tr>
+            <th pSortableColumn="name">
+              Nombre
+              <p-sortIcon field="name" />
+            </th>
+            <th pSortableColumn="description">
+              Descripción
+              <p-sortIcon field="description" />
+            </th>
+            <th pSortableColumn="status" class="text-center">
+              Estado
+              <p-sortIcon field="status" />
+            </th>
+            <th class="text-center" style="width: 120px">Acciones</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-role>
+          <tr>
+            <td>
+              <span class="font-semibold text-surface-900 dark:text-surface-0">
+                {{ role.name }}
+              </span>
+            </td>
+            <td>
+              <span class="text-muted-color">
+                {{ role.description || '—' }}
+              </span>
+            </td>
+            <td class="text-center">
+              <p-tag 
+                [value]="role.status ? 'ACTIVO' : 'INACTIVO'" 
+                [severity]="role.status ? 'success' : 'danger'">
+              </p-tag>
+            </td>
+            <td class="text-center">
+              <div class="flex justify-center gap-2">
+                <p-button 
+                  icon="pi pi-pencil" 
+                  (onClick)="editRole(role)" 
+                  [text]="true" 
+                  [rounded]="true" 
+                  severity="info"
+                  pTooltip="Editar"
+                  tooltipPosition="top">
+                </p-button>
+                <p-button 
+                  icon="pi pi-trash" 
+                  (onClick)="deleteRole(role.id!)" 
+                  [text]="true" 
+                  [rounded]="true" 
+                  severity="danger"
+                  pTooltip="Eliminar"
+                  tooltipPosition="top">
+                </p-button>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="4" class="text-center py-8">
+              <i class="pi pi-inbox text-4xl text-muted-color mb-3 block"></i>
+              <p class="text-muted-color">No hay roles registrados</p>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+</div>
+
+<!-- Dialog -->
+<p-dialog 
+  [(visible)]="displayDialog" 
+  [header]="editMode() ? 'Editar Rol' : 'Nuevo Rol'" 
+  [modal]="true" 
+  [style]="{width: '90vw', 'max-width': '700px'}"
+  [draggable]="false"
+  [resizable]="false">
+  
+  <div class="grid grid-cols-12 gap-4">
+    <!-- Información General -->
+    <div class="col-span-12">
+      <h6 class="text-lg font-semibold text-surface-900 dark:text-surface-0 mb-3 pb-3 border-b border-surface-200 dark:border-surface-700">
+        Información General
+      </h6>
+    </div>
+
+    <div class="col-span-12">
+      <label for="role-name" class="block font-semibold mb-2 text-surface-900 dark:text-surface-0">
+        Nombre <span class="text-red-500">*</span>
+      </label>
+      <input 
+        pInputText 
+        id="role-name"
+        [(ngModel)]="currentRole.name" 
+        placeholder="Ej: Operador, Supervisor" 
+        class="w-full" />
+    </div>
+
+    <div class="col-span-12">
+      <label for="role-description" class="block font-semibold mb-2 text-surface-900 dark:text-surface-0">
+        Descripción
+      </label>
+      <textarea 
+        pInputTextarea 
+        id="role-description"
+        [(ngModel)]="currentRole.description" 
+        rows="3" 
+        placeholder="Descripción del rol y sus responsabilidades"
+        class="w-full">
+      </textarea>
+    </div>
+
+    <!-- Estado -->
+    <div class="col-span-12">
+      <h6 class="text-lg font-semibold text-surface-900 dark:text-surface-0 mb-3 pb-3 border-b border-surface-200 dark:border-surface-700">
+        Estado
+      </h6>
+    </div>
+
+    <div class="col-span-12">
+      <div class="flex items-center gap-3">
+        <p-checkbox 
+          [(ngModel)]="currentRole.status" 
+          [binary]="true" 
+          inputId="role-status">
+        </p-checkbox>
+        <label for="role-status" class="font-medium cursor-pointer text-surface-900 dark:text-surface-0">
+          Activo
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-3">
+      <p-button 
+        label="Cancelar" 
+        icon="pi pi-times" 
+        (onClick)="displayDialog = false" 
+        [outlined]="true"
+        [rounded]="true"
+        severity="secondary">
+      </p-button>
+      <p-button 
+        label="Guardar" 
+        icon="pi pi-check" 
+        (onClick)="saveRole()" 
+        [loading]="saving()"
+        [rounded]="true">
+      </p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<p-toast />
+<p-confirmDialog />

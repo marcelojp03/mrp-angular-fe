@@ -2,7 +2,13 @@ import { HttpClient } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
 import { Observable } from 'rxjs';
 import { environment } from "../../../../environments/environment";
-import { SupplierItemsResponse, SupplierItem, SupplierItemRequest, SupplierItemUpdateRequest } from './interfaces/supplier-item.interface';
+import { 
+  SupplierItemsResponse, 
+  SupplierItem, 
+  SupplierItemRequest, 
+  SupplierItemUpdateRequest,
+  SupplierItemResponse 
+} from './interfaces/supplier-item.interface';
 
 @Injectable({ providedIn: 'root' })  
 export class SupplierItemService {
@@ -44,13 +50,13 @@ export class SupplierItemService {
     return this.http.delete(`${this.apiURL}/supplier-items/${id}`);
   }
 
-  // Toggle active status
-  public toggleEstado(id: number): Observable<any> {
-    return this.http.patch(`${this.apiURL}/supplier-items/${id}/toggle-active`, {});
+  // Toggle active status (PUT method as per backend documentation)
+  public toggleEstado(id: number): Observable<SupplierItemResponse> {
+    return this.http.put<SupplierItemResponse>(`${this.apiURL}/supplier-items/${id}/toggle-active`, {});
   }
 
-  // Set as preferred supplier for a product
-  public marcarComoPreferido(id: number): Observable<any> {
-    return this.http.patch(`${this.apiURL}/supplier-items/${id}/set-preferred`, {});
+  // Set as preferred supplier for a product (PUT method as per backend documentation)
+  public marcarComoPreferido(id: number): Observable<SupplierItemResponse> {
+    return this.http.put<SupplierItemResponse>(`${this.apiURL}/supplier-items/${id}/set-preferred`, {});
   }
 }

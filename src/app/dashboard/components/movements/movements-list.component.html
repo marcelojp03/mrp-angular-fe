@@ -1,0 +1,155 @@
+<div class="grid grid-cols-12 gap-6">
+  <!-- Header Card -->
+  <div class="col-span-12">
+    <div class="card">
+      <h2 class="text-3xl font-bold text-surface-900 dark:text-surface-0 m-0">
+        <i class="pi pi-sync mr-2 text-purple-500"></i>
+        Movimientos de Inventario
+      </h2>
+      <p class="text-muted-color mt-2">
+        Historial completo de entradas y salidas de stock
+      </p>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  @for (card of statsCards(); track card.label) {
+    <div class="col-span-12 lg:col-span-3">
+      <app-stats-card [config]="card" />
+    </div>
+  }
+
+  <!-- Table Card -->
+  <div class="col-span-12">
+    <div class="card">
+      <p-table
+        #dt
+        [value]="movements()"
+        [rows]="10"
+        [paginator]="true"
+        [globalFilterFields]="['product_name', 'product_code', 'from_warehouse_name', 'to_warehouse_name', 'reason', 'movement_type', 'created_by_name', 'note']"
+        [tableStyle]="{ 'min-width': '75rem' }"
+        [rowHover]="true"
+        [loading]="loading()"
+        dataKey="id"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} movimientos"
+        [showCurrentPageReport]="true"
+      >
+        <ng-template pTemplate="caption">
+          <div class="flex justify-content-between align-items-center gap-2">
+            <p-iconField iconPosition="left">
+              <p-inputIcon styleClass="pi pi-search" />
+              <input
+                pInputText
+                type="text"
+                placeholder="Buscar movimientos..."
+                (input)="onGlobalFilter($event)"
+              />
+            </p-iconField>
+            <p-button
+              icon="pi pi-refresh"
+              [rounded]="true"
+              [outlined]="true"
+              severity="secondary"
+              (onClick)="loadMovements()"
+              [loading]="loading()"
+              pTooltip="Actualizar"
+              tooltipPosition="top"
+            />
+          </div>
+        </ng-template>
+
+        <ng-template pTemplate="header">
+          <tr>
+            <th style="width: 5rem">ID</th>
+            <th pSortableColumn="type" style="width: 8rem">
+              Tipo <p-sortIcon field="type" />
+            </th>
+            <th pSortableColumn="product_name">
+              Producto <p-sortIcon field="product_name" />
+            </th>
+            <th pSortableColumn="warehouse_name">
+              Almacén <p-sortIcon field="warehouse_name" />
+            </th>
+            <th pSortableColumn="quantity" style="width: 8rem">
+              Cantidad <p-sortIcon field="quantity" />
+            </th>
+            <th pSortableColumn="reason">
+              Motivo <p-sortIcon field="reason" />
+            </th>
+            <th pSortableColumn="created_at" style="width: 12rem">
+              Fecha <p-sortIcon field="created_at" />
+            </th>
+            <th style="width: 10rem">Usuario</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-movement>
+          <tr>
+            <td>{{ movement.id }}</td>
+            <td>
+              <p-tag
+                [value]="getTypeLabel(movement.movement_type)"
+                [severity]="getTypeSeverity(movement.movement_type)"
+                [icon]="'pi ' + getTypeIcon(movement.movement_type)"
+              />
+            </td>
+            <td>
+              @if (movement.product_name) {
+                <div>
+                  <div class="font-semibold">{{ movement.product_name }}</div>
+                  @if (movement.product_code) {
+                    <small class="text-muted-color">{{ movement.product_code }}</small>
+                  }
+                </div>
+              } @else {
+                <span>—</span>
+              }
+            </td>
+            <td>
+              @if (movement.from_warehouse_id || movement.to_warehouse_id) {
+                <div>
+                  @if (movement.movement_type === 'IN' && movement.to_warehouse_id) {
+                    <span>→ {{ movement.to_warehouse_name || 'Almacén #' + movement.to_warehouse_id }}</span>
+                  }
+                  @if (movement.movement_type === 'OUT' && movement.from_warehouse_id) {
+                    <span>← {{ movement.from_warehouse_name || 'Almacén #' + movement.from_warehouse_id }}</span>
+                  }
+                </div>
+              } @else {
+                <div>—</div>
+              }
+            </td>
+            <td class="text-right font-semibold">
+              {{ movement.quantity | number:'1.0-2' }}
+            </td>
+            <td>
+              <div>
+                {{ movement.reason }}
+                @if (movement.note) {
+                  <small class="block text-muted-color">{{ movement.note }}</small>
+                }
+              </div>
+            </td>
+            <td>
+              <small>{{ formatDate(movement.created_at) }}</small>
+            </td>
+            <td>
+              {{ movement.created_by_name || '—' }}
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="8" class="text-center">
+              No se encontraron movimientos.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+</div>
+
+<p-toast />

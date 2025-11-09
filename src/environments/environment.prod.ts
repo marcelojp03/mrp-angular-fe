@@ -1,7 +1,7 @@
 export const environment = {
   production: true,
   backend: {
-    host: '',
+    host: 'https://bmf8h9p2pz.us-east-1.awsapprunner.com/api',
     host2: '',
     host3: '',
     hostx: '',

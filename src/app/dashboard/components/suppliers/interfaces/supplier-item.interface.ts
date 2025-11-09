@@ -34,6 +34,13 @@ export interface SupplierItemUpdateRequest extends SupplierItemRequest {
     id: number;
 }
 
+// Response for single supplier item operations
+export interface SupplierItemResponse {
+    data: SupplierItem;
+    message: string;
+    success: boolean;
+}
+
 // Interface for display in components with related data
 export interface SupplierItemVM {
     id: number;

@@ -6,6 +6,7 @@ export interface BOM {
   version: string;
   description?: string;
   is_active: boolean;
+  org_id?: number;
   components: BOMComponent[];
   created_at?: string;
   updated_at?: string;
@@ -13,14 +14,24 @@ export interface BOM {
 
 export interface BOMComponent {
   id?: number;
+  bom_id?: number;
   component_id: number;
   component_name?: string;
   component_code?: string;
   quantity: number;
   unit_id: number;
-  unit_name?: string;
+  unit_code?: string;
+  unit_description?: string;
   scrap_percentage: number;
+  sequence: number;
   notes?: string;
+  created_at?: string;
+}
+
+export interface BOMsResponse {
+  data: BOM[];
+  message: string;
+  success: boolean;
 }
 
 export interface Product {
@@ -28,13 +39,27 @@ export interface Product {
   code: string;
   name: string;
   description?: string;
-  category_id?: number;
-  subcategory_id?: number;
+  item_type?: string;
+  procurement_type?: string;
+  min_stock?: number;
   unit_id?: number;
+  status?: boolean;
 }
 
 export interface Unit {
   id: number;
-  name: string;
-  abbreviation: string;
+  code: string;           // Código de la unidad (EA, KG, M, L, etc.)
+  description: string;    // Descripción (Unidad, Kilogramo, Metro, etc.)
+}
+
+export interface ProductsResponse {
+  data: Product[];
+  message: string;
+  success: boolean;
+}
+
+export interface UnitsResponse {
+  data: Unit[];
+  message: string;
+  success: boolean;
 }

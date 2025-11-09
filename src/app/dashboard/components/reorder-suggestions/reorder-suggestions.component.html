@@ -4,25 +4,13 @@
   <!-- Header -->
   <div class="col-span-12">
     <div class="card">
-      <div class="flex justify-between items-center">
-        <div>
-          <h2 class="text-3xl font-bold text-surface-900 dark:text-surface-0 m-0">
-            <i class="pi pi-refresh mr-2 text-blue-500"></i>
-            Sugerencias de Reposición
-          </h2>
-          <p class="text-muted-color mt-2">
-            Recomendaciones automáticas basadas en stock mínimo y tiempos de entrega
-          </p>
-        </div>
-        <button
-          pButton
-          icon="pi pi-refresh"
-          label="Actualizar"
-          class="p-button-outlined"
-          (click)="loadSuggestions()"
-          [loading]="loading()"
-        ></button>
-      </div>
+      <h2 class="text-3xl font-bold text-surface-900 dark:text-surface-0 m-0">
+        <i class="pi pi-refresh mr-2 text-blue-500"></i>
+        Sugerencias de Reposición
+      </h2>
+      <p class="text-muted-color mt-2">
+        Recomendaciones automáticas basadas en stock mínimo y tiempos de entrega
+      </p>
     </div>
   </div>
 
@@ -54,6 +42,18 @@
           responsiveLayout="scroll"
           [globalFilterFields]="['code', 'name']"
         >
+          <ng-template #caption>
+            <div class="flex items-center justify-end">
+              <button
+                pButton
+                icon="pi pi-refresh"
+                label="Actualizar"
+                class="p-button-outlined p-button-sm"
+                (click)="loadSuggestions()"
+                [loading]="loading()"
+              ></button>
+            </div>
+          </ng-template>
           <ng-template #header>
             <tr>
               <th pSortableColumn="code">

@@ -1,49 +1,51 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../../environments/environment';
-import { AuthService } from '../../../../core/services/auth.service';
-import { BOM, Product, Unit } from './interfaces/bom.interface';
+import { BOMsResponse, ProductsResponse, UnitsResponse, BOM } from './interfaces/bom.interface';
 
 @Injectable({
   providedIn: 'root'
 })
 export class BomsService {
   private http = inject(HttpClient);
-  private authService = inject(AuthService);
   private apiUrl = environment.backend.host;
 
-  private getHeaders(): HttpHeaders {
-    return new HttpHeaders({ 
-      'Authorization': `Bearer ${this.authService.getAuthToken()}` 
-    });
+  getBOMs(): Observable<BOMsResponse> {
+    return this.http.get<BOMsResponse>(`${this.apiUrl}/boms`);
   }
 
-  getBOMs(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/boms`, { headers: this.getHeaders() });
+  getBOM(id: number): Observable<{ data: BOM; success: boolean; message: string }> {
+    return this.http.get<{ data: BOM; success: boolean; message: string }>(`${this.apiUrl}/boms/${id}`);
   }
 
-  getProducts(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/products`, { headers: this.getHeaders() });
+  // Obtener TODOS los productos (para seleccionar componentes en la BOM)
+  getProducts(): Observable<ProductsResponse> {
+    return this.http.get<ProductsResponse>(`${this.apiUrl}/products`);
   }
 
-  getUnits(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/units`, { headers: this.getHeaders() });
+  // Obtener solo productos con BOM activa (para el selector principal de la BOM)
+  getProductsWithBOM(): Observable<ProductsResponse> {
+    return this.http.get<ProductsResponse>(`${this.apiUrl}/boms/products-with-active-bom`);
   }
 
-  createBOM(bom: BOM): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/boms`, bom, { headers: this.getHeaders() });
+  getUnits(): Observable<UnitsResponse> {
+    return this.http.get<UnitsResponse>(`${this.apiUrl}/units`);
   }
 
-  updateBOM(id: number, bom: BOM): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/boms/${id}`, bom, { headers: this.getHeaders() });
+  createBOM(bom: Partial<BOM>): Observable<{ data: BOM; success: boolean; message: string }> {
+    return this.http.post<{ data: BOM; success: boolean; message: string }>(`${this.apiUrl}/boms`, bom);
   }
 
-  activateBOM(id: number): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/boms/${id}/activate`, {}, { headers: this.getHeaders() });
+  updateBOM(id: number, bom: Partial<BOM>): Observable<{ data: BOM; success: boolean; message: string }> {
+    return this.http.put<{ data: BOM; success: boolean; message: string }>(`${this.apiUrl}/boms/${id}`, bom);
   }
 
-  deleteBOM(id: number): Observable<any> {
-    return this.http.delete<any>(`${this.apiUrl}/boms/${id}`, { headers: this.getHeaders() });
+  activateBOM(id: number): Observable<{ success: boolean; message: string }> {
+    return this.http.put<{ success: boolean; message: string }>(`${this.apiUrl}/boms/${id}/activate`, {});
+  }
+
+  deleteBOM(id: number): Observable<{ success: boolean; message: string }> {
+    return this.http.delete<{ success: boolean; message: string }>(`${this.apiUrl}/boms/${id}`);
   }
 }

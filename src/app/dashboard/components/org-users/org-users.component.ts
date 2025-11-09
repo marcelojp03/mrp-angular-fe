@@ -1,225 +1,231 @@
 import { Component, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-
-// PrimeNG imports
-import { ButtonModule } from 'primeng/button';
-import { CardModule } from 'primeng/card';
-import { TableModule } from 'primeng/table';
-import { InputTextModule } from 'primeng/inputtext';
-import { TagModule } from 'primeng/tag';
-import { ToastModule } from 'primeng/toast';
-import { ProgressSpinnerModule } from 'primeng/progressspinner';
-import { DialogModule } from 'primeng/dialog';
-import { SelectModule } from 'primeng/select';
-
+import { SharedModule } from '../../../shared/shared.module';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { OrgUsersService } from './org-users.service';
+import { RolesService } from '../roles/roles.service';
 import { SubscriptionService } from '../subscription/subscription.service';
-import { OrgUser, AddOrgUserRequest } from './org-users.interface';
+import { User, CreateUserRequest, UpdateUserRequest } from './org-users.interface';
+import { Role } from '../roles/interfaces/role.interface';
 
 @Component({
   selector: 'app-org-users',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    ButtonModule,
-    CardModule,
-    TableModule,
-    InputTextModule,
-    TagModule,
-    ToastModule,
-    ProgressSpinnerModule,
-    DialogModule,
-    SelectModule
-  ],
-  providers: [MessageService],
+  imports: [CommonModule, SharedModule],
+  providers: [MessageService, ConfirmationService],
   templateUrl: './org-users.component.html',
   styleUrl: './org-users.component.scss'
 })
 export class OrgUsersComponent implements OnInit {
-  private orgUsersService = inject(OrgUsersService);
+  private usersService = inject(OrgUsersService);
+  private rolesService = inject(RolesService);
   private subscriptionService = inject(SubscriptionService);
   private messageService = inject(MessageService);
+  private confirmationService = inject(ConfirmationService);
 
   // Signals
-  users = signal<OrgUser[]>([]);
-  loading = signal<boolean>(false);
-  showAddDialog = signal<boolean>(false);
-  addingUser = signal<boolean>(false);
-  maxUsers = signal<number>(0);
-  currentUsers = signal<number>(0);
-
-  // Add user form
-  newUserEmail = signal<string>('');
-  newUserFullName = signal<string>('');
-  newUserPassword = signal<string>('');
-  newUserRoleId = signal<number>(2); // Default to regular user
-
-  roleOptions = [
-    { label: 'Administrador', value: 1 },
-    { label: 'Usuario', value: 2 },
-    { label: 'Solo Lectura', value: 3 }
-  ];
+  users = signal<User[]>([]);
+  availableRoles = signal<Role[]>([]);
+  subscriptionLimits = signal<{max_users?: number} | null>(null);
+  loading = signal(false);
+  saving = signal(false);
+  editingUser = signal(false);
+  
+  // Dialog
+  userDialog = false;
+  searchValue = '';
+  currentUser: Partial<CreateUserRequest & UpdateUserRequest & { id?: number }> = {};
 
   ngOnInit(): void {
     this.loadUsers();
+    this.loadRoles();
     this.loadSubscriptionLimits();
   }
 
   loadUsers(): void {
     this.loading.set(true);
-
-    this.orgUsersService.getOrgUsers().subscribe({
-      next: (response) => {
-        this.users.set(response.data);
-        this.currentUsers.set(response.data.length);
+    this.usersService.getUsers().subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.users.set(res.data);
+        }
         this.loading.set(false);
       },
-      error: (error: any) => {
-        console.error('Error loading users:', error);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'No se pudieron cargar los usuarios de la organización'
+      error: (err) => {
+        this.messageService.add({ 
+          severity: 'error', 
+          summary: 'Error', 
+          detail: err.error?.message || 'Error al cargar usuarios' 
         });
         this.loading.set(false);
+      }
+    });
+  }
+
+  loadRoles(): void {
+    this.rolesService.getRoles().subscribe({
+      next: (res) => {
+        if (res.success && Array.isArray(res.data)) {
+          this.availableRoles.set(res.data.filter((r: Role) => r.status));
+        }
+      },
+      error: (err) => {
+        console.error('Error loading roles:', err);
       }
     });
   }
 
   loadSubscriptionLimits(): void {
     this.subscriptionService.getSubscription().subscribe({
-      next: (response) => {
-        this.maxUsers.set(response.data.plan.limits.max_users);
+      next: (res) => {
+        if (res.success && res.data?.plan?.limits) {
+          this.subscriptionLimits.set({
+            max_users: res.data.plan.limits.max_users || 999999
+          });
+        }
       },
-      error: (error: any) => {
-        console.error('Error loading subscription limits:', error);
+      error: (err) => {
+        console.error('Error loading subscription limits:', err);
       }
     });
   }
 
-  openAddDialog(): void {
-    if (this.currentUsers() >= this.maxUsers()) {
+  showDialog(): void {
+    const maxUsers = this.subscriptionLimits()?.max_users || Infinity;
+    if (this.users().length >= maxUsers) {
       this.messageService.add({
         severity: 'warn',
-        summary: 'Límite Alcanzado',
-        detail: `Has alcanzado el límite de ${this.maxUsers()} usuarios de tu plan`
+        summary: 'Límite alcanzado',
+        detail: `Has alcanzado el límite de ${maxUsers} usuarios de tu plan`
       });
       return;
     }
 
-    this.newUserEmail.set('');
-    this.newUserFullName.set('');
-    this.newUserPassword.set('');
-    this.newUserRoleId.set(2);
-    this.showAddDialog.set(true);
+    this.currentUser = { role_ids: [], status: true };
+    this.editingUser.set(false);
+    this.userDialog = true;
   }
 
-  addUser(): void {
-    const email = this.newUserEmail().trim();
-    const fullName = this.newUserFullName().trim();
-    const password = this.newUserPassword().trim();
-    
-    if (!email || !fullName || !password) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Campos Requeridos',
-        detail: 'Debes completar todos los campos'
-      });
-      return;
-    }
-
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Email Inválido',
-        detail: 'El formato del email no es válido'
-      });
-      return;
-    }
-
-    // Password length validation
-    if (password.length < 6) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Contraseña Débil',
-        detail: 'La contraseña debe tener al menos 6 caracteres'
-      });
-      return;
-    }
-
-    this.addingUser.set(true);
-
-    const request: AddOrgUserRequest = {
-      email: email,
-      full_name: fullName,
-      password: password,
-      role_id: this.newUserRoleId()
+  editUser(user: User): void {
+    this.currentUser = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      status: user.status,
+      role_ids: user.roles?.map(r => r.role_id) || []
     };
+    this.editingUser.set(true);
+    this.userDialog = true;
+  }
 
-    this.orgUsersService.addOrgUser(request).subscribe({
-      next: (response) => {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Usuario Agregado',
-          detail: response.message || 'El usuario fue invitado exitosamente'
+  saveUser(): void {
+    // Validations
+    if (!this.currentUser.name?.trim()) {
+      this.messageService.add({ 
+        severity: 'warn', 
+        summary: 'Validación', 
+        detail: 'El nombre es requerido' 
+      });
+      return;
+    }
+
+    if (!this.currentUser.email?.trim()) {
+      this.messageService.add({ 
+        severity: 'warn', 
+        summary: 'Validación', 
+        detail: 'El email es requerido' 
+      });
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(this.currentUser.email)) {
+      this.messageService.add({ 
+        severity: 'warn', 
+        summary: 'Validación', 
+        detail: 'El formato del email no es válido' 
+      });
+      return;
+    }
+
+    if (!this.editingUser() && (!this.currentUser.password || this.currentUser.password.length < 6)) {
+      this.messageService.add({ 
+        severity: 'warn', 
+        summary: 'Validación', 
+        detail: 'La contraseña debe tener al menos 6 caracteres' 
+      });
+      return;
+    }
+
+    this.saving.set(true);
+
+    const request = this.editingUser() && this.currentUser.id
+      ? this.usersService.updateUser(this.currentUser.id, {
+          name: this.currentUser.name,
+          email: this.currentUser.email,
+          status: this.currentUser.status,
+          role_ids: this.currentUser.role_ids
+        })
+      : this.usersService.createUser({
+          name: this.currentUser.name!,
+          email: this.currentUser.email!,
+          password: this.currentUser.password!,
+          role_ids: this.currentUser.role_ids
         });
-        this.showAddDialog.set(false);
-        this.addingUser.set(false);
-        this.loadUsers();
+
+    request.subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.messageService.add({ 
+            severity: 'success', 
+            summary: 'Éxito', 
+            detail: res.message || 'Usuario guardado correctamente' 
+          });
+          this.userDialog = false;
+          this.loadUsers();
+        }
+        this.saving.set(false);
       },
-      error: (error: any) => {
-        console.error('Error adding user:', error);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: error.error?.message || 'No se pudo agregar el usuario'
+      error: (err) => {
+        this.messageService.add({ 
+          severity: 'error', 
+          summary: 'Error', 
+          detail: err.error?.message || 'Error al guardar el usuario' 
         });
-        this.addingUser.set(false);
+        this.saving.set(false);
       }
     });
   }
 
-  getRoleSeverity(roleId: number): string {
-    switch (roleId) {
-      case 1: return 'danger'; // admin
-      case 2: return 'success'; // user
-      case 3: return 'info'; // readonly
-      default: return 'secondary';
-    }
-  }
-
-  getRoleLabel(roleId: number): string {
-    switch (roleId) {
-      case 1: return 'Administrador';
-      case 2: return 'Usuario';
-      case 3: return 'Solo Lectura';
-      default: return 'Desconocido';
-    }
-  }
-
-  getStatusSeverity(status: boolean): string {
-    return status ? 'success' : 'danger';
-  }
-
-  getStatusLabel(status: boolean): string {
-    return status ? 'Activo' : 'Inactivo';
-  }
-
-  getUsagePercentage(): number {
-    if (this.maxUsers() === 0) return 0;
-    return Math.round((this.currentUsers() / this.maxUsers()) * 100);
-  }
-
-  getUsageSeverity(): 'success' | 'info' | 'warn' | 'danger' {
-    const percentage = this.getUsagePercentage();
-    if (percentage >= 100) return 'danger';
-    if (percentage >= 80) return 'warn';
-    if (percentage >= 50) return 'info';
-    return 'success';
+  deleteUser(id: number): void {
+    this.confirmationService.confirm({
+      message: '¿Está seguro de que desea eliminar este usuario?',
+      header: 'Confirmar Eliminación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Sí, eliminar',
+      rejectLabel: 'Cancelar',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        this.usersService.deleteUser(id).subscribe({
+          next: (res) => {
+            if (res.success) {
+              this.messageService.add({ 
+                severity: 'success', 
+                summary: 'Éxito', 
+                detail: res.message || 'Usuario eliminado correctamente' 
+              });
+              this.loadUsers();
+            }
+          },
+          error: (err) => {
+            this.messageService.add({ 
+              severity: 'error', 
+              summary: 'Error', 
+              detail: err.error?.message || 'Error al eliminar el usuario' 
+            });
+          }
+        });
+      }
+    });
   }
 }

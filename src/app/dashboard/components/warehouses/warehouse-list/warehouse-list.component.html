@@ -1,30 +1,33 @@
-<div class="card">
-  <p-toolbar styleClass="mb-4 gap-2">
-    <ng-template pTemplate="left">
-      <p-button
-        severity="success"
-        label="Nuevo"
-        icon="pi pi-plus"
-        class="mr-2"
-        (onClick)="openNew()"
-      />
-    </ng-template>
+<div class="grid grid-cols-12 gap-6">
+  <!-- Header Card -->
+  <div class="col-span-12">
+    <div class="card">
+      <h2 class="text-3xl font-bold text-surface-900 dark:text-surface-0 m-0">
+        <i class="pi pi-building mr-2 text-blue-500"></i>
+        Almacenes
+      </h2>
+      <p class="text-muted-color mt-2">
+        Gestión de almacenes y ubicaciones de inventario
+      </p>
+    </div>
+  </div>
 
-    <ng-template pTemplate="right">
-      <span class="p-input-icon-left">
-        <i class="pi pi-search"></i>
-        <input
-          pInputText
-          type="text"
-          placeholder="Buscar almacenes..."
-          (input)="onGlobalFilter($event)"
-          class="w-full"
-        />
-      </span>
-    </ng-template>
-  </p-toolbar>
+  <!-- Toolbar + Table -->
+  <div class="col-span-12">
+    <div class="card">
+      <p-toolbar styleClass="mb-4 gap-2">
+        <ng-template pTemplate="left">
+          <p-button
+            severity="success"
+            label="Nuevo"
+            icon="pi pi-plus"
+            class="mr-2"
+            (onClick)="openNew()"
+          />
+        </ng-template>
+      </p-toolbar>
 
-  <p-table
+<p-table
     #dt
     [value]="filteredWarehouses()"
     [rows]="10"
@@ -38,6 +41,30 @@
     [sortField]="'name'"
     [sortOrder]="1"
   >
+    <ng-template pTemplate="caption">
+      <div class="flex justify-content-between align-items-center gap-2">
+        <p-iconField iconPosition="left">
+          <p-inputIcon styleClass="pi pi-search" />
+          <input
+            pInputText
+            type="text"
+            placeholder="Buscar almacenes..."
+            (input)="onGlobalFilter($event)"
+          />
+        </p-iconField>
+        <p-button
+          icon="pi pi-refresh"
+          [rounded]="true"
+          [outlined]="true"
+          severity="secondary"
+          (onClick)="loadWarehouses()"
+          [loading]="loading()"
+          pTooltip="Actualizar"
+          tooltipPosition="top"
+        />
+      </div>
+    </ng-template>
+    
     <ng-template pTemplate="header">
       <tr>
         <th pSortableColumn="name">
@@ -91,58 +118,75 @@
 <!-- Dialog para editar/crear almacén -->
 <p-dialog
   [(visible)]="warehouseDialog"
-  [style]="{ width: '450px' }"
-  header="Detalles del Almacén"
+  [style]="{ width: '90vw', 'max-width': '700px' }"
+  [header]="warehouseForm().id ? 'Editar Almacén' : 'Nuevo Almacén'"
   [modal]="true"
-  styleClass="p-fluid"
+  [draggable]="false"
+  [resizable]="false"
 >
-  <ng-template pTemplate="content">
-    <div class="field">
-      <label for="name">Nombre *</label>
-      <input
-        type="text"
-        pInputText
-        id="name"
-        [(ngModel)]="warehouseForm().name"
-        required
-        autofocus
-        [class]="{ 'ng-invalid ng-dirty': submitted() && !warehouseForm().name.trim() }"
-      />
-      <small class="p-error" *ngIf="submitted() && !warehouseForm().name.trim()">
-        El nombre es requerido.
-      </small>
-    </div>
+  <ng-template #content>
+    <!-- Sección: Información Básica -->
+    <div class="mb-6">
+      <h6 class="text-lg font-semibold mb-4 border-b pb-2">Información Básica</h6>
+      <div class="grid grid-cols-12 gap-4">
+        <!-- Nombre (full width prioritario) -->
+        <div class="col-span-12">
+          <label for="name" class="block text-sm font-medium mb-2">
+            Nombre del Almacén *
+          </label>
+          <input
+            id="name"
+            pInputText
+            [(ngModel)]="warehouseForm().name"
+            required
+            autofocus
+            placeholder="Ingrese el nombre del almacén"
+            fluid
+            class="w-full"
+          />
+          <small class="text-red-500" *ngIf="submitted() && !warehouseForm().name?.trim()">
+            El nombre es obligatorio.
+          </small>
+        </div>
 
-    <div class="field">
-      <label for="location">Ubicación *</label>
-      <input
-        type="text"
-        pInputText
-        id="location"
-        [(ngModel)]="warehouseForm().location"
-        required
-        [class]="{ 'ng-invalid ng-dirty': submitted() && !warehouseForm().location.trim() }"
-      />
-      <small class="p-error" *ngIf="submitted() && !warehouseForm().location.trim()">
-        La ubicación es requerida.
-      </small>
+        <!-- Ubicación (full width) -->
+        <div class="col-span-12">
+          <label for="location" class="block text-sm font-medium mb-2">
+            Ubicación *
+          </label>
+          <input
+            id="location"
+            pInputText
+            [(ngModel)]="warehouseForm().location"
+            required
+            placeholder="Dirección física del almacén"
+            fluid
+            class="w-full"
+          />
+          <small class="text-red-500" *ngIf="submitted() && !warehouseForm().location?.trim()">
+            La ubicación es obligatoria.
+          </small>
+        </div>
+      </div>
     </div>
-
   </ng-template>
 
-  <ng-template pTemplate="footer">
-    <p-button
-      label="Cancelar"
-      icon="pi pi-times"
-      [text]="true"
-      (onClick)="hideDialog()"
-    />
-    <p-button
-      label="Guardar"
-      icon="pi pi-check"
-      [text]="true"
-      (onClick)="saveWarehouse()"
-    />
+  <ng-template #footer>
+    <div class="flex justify-end gap-3">
+      <p-button
+        label="Cancelar"
+        icon="pi pi-times"
+        severity="secondary"
+        [outlined]="true"
+        (onClick)="hideDialog()"
+      />
+      <p-button
+        label="Guardar Almacén"
+        icon="pi pi-check"
+        [loading]="submitted()"
+        (onClick)="saveWarehouse()"
+      />
+    </div>
   </ng-template>
 </p-dialog>
 

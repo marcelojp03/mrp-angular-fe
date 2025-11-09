@@ -103,16 +103,17 @@ export class MiComponente {
 ### 🅱️ **Patrón B: Solo Lectura + Análisis**
 **Casos de uso:** Sugerencias, Stock Bajo, Reportes, Logs
 - ✅ Solo lectura
-- ✅ Stats cards (4 KPIs)
-- ✅ Botón refresh/actualizar
+- ✅ **Stats cards opcionales** (usar solo cuando hay métricas relevantes que aportan valor)
+- ✅ **Botón "Actualizar" siempre visible** (sin header card con botón)
 - ❌ Sin Dialog CRUD
+- ❌ Sin Toolbar  
 - ❌ Sin selección múltiple
 
-**Ejemplos:** `reorder-suggestions`, `stocks-low`, `system-logs`
+**Ejemplos:** ✅ `reorder-suggestions` (con 4 stats), ✅ `stocks-low` (sin stats)
 
----
-
-## 🎨 Patrón A: CRUD Completo
+**Cuándo usar Stats Cards:**
+- ✅ Cuando hay métricas clave que aportan contexto y valor (ej: total urgentes, cantidad total, promedios)
+- ❌ Cuando es solo un listado simple sin análisis numérico
 
 ---
 
@@ -282,43 +283,25 @@ export class MiComponente {
 <p-toast />
 
 <div class="grid grid-cols-12 gap-6">
-  <!-- Header Card -->
+  <!-- Header Card (sin botón) -->
   <div class="col-span-12">
     <div class="card">
-      <div class="flex justify-between items-center">
-        <div>
-          <h2 class="text-3xl font-bold text-surface-900 dark:text-surface-0 m-0">
-            <i class="pi pi-chart-line mr-2 text-blue-500"></i>
-            Sugerencias de Reposición
-          </h2>
-          <p class="text-muted-color mt-2">
-            Recomendaciones automáticas basadas en stock mínimo
-          </p>
-        </div>
-        <button pButton icon="pi pi-refresh" label="Actualizar" 
-                class="p-button-outlined" (click)="loadData()" [loading]="loading()" />
-      </div>
+      <h2 class="text-3xl font-bold text-surface-900 dark:text-surface-0 m-0">
+        <i class="pi pi-chart-line mr-2 text-blue-500"></i>
+        Sugerencias de Reposición
+      </h2>
+      <p class="text-muted-color mt-2">
+        Recomendaciones automáticas basadas en stock mínimo
+      </p>
     </div>
   </div>
 
-  <!-- Stats Cards (OBLIGATORIAS - usar <app-stats-card>) -->
+  <!-- Stats Cards (OPCIONALES - solo si hay métricas relevantes) -->
   @for (stat of statsCards(); track stat.label) {
     <div class="col-span-12 md:col-span-6 lg:col-span-3">
       <app-stats-card [config]="stat" />
     </div>
   }
-
-  <!-- Table Card -->
-    <div class="card bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-muted-color text-sm mb-1">Urgentes</p>
-          <p class="text-3xl font-bold text-red-600">{{ getUrgentCount() }}</p>
-        </div>
-        <i class="pi pi-exclamation-triangle text-4xl text-red-500 opacity-50"></i>
-      </div>
-    </div>
-  </div>
 
   <!-- Table Card -->
   <div class="col-span-12">
@@ -338,6 +321,15 @@ export class MiComponente {
           currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
           [globalFilterFields]="['code', 'name']"
         >
+          <!-- Caption con botón Actualizar -->
+          <ng-template #caption>
+            <div class="flex items-center justify-end">
+              <button pButton icon="pi pi-refresh" label="Actualizar" 
+                      class="p-button-outlined p-button-sm" 
+                      (click)="loadData()" [loading]="loading()" />
+            </div>
+          </ng-template>
+
           <ng-template #header>
             <tr>
               <th pSortableColumn="code">Código <p-sortIcon field="code" /></th>
@@ -346,6 +338,7 @@ export class MiComponente {
               <th class="text-center">Estado</th>
             </tr>
           </ng-template>
+          
           <ng-template #body let-item>
             <tr>
               <td><span class="font-medium">{{ item.code }}</span></td>
@@ -356,6 +349,7 @@ export class MiComponente {
               </td>
             </tr>
           </ng-template>
+          
           <ng-template #emptymessage>
             <tr>
               <td colspan="4" class="text-center py-8">
@@ -386,15 +380,15 @@ export class MiComponente {
 | Característica | Patrón A (CRUD) | Patrón B (Read-Only) |
 |----------------|----------------|----------------------|
 | **Grid cols-12** | ✅ Sí | ✅ Sí |
-| **Header card** | ✅ Sí | ✅ Sí |
-| **Stats cards** | ⚠️ Opcionales | ✅ Obligatorias (4) |
+| **Header card** | ✅ Sí | ✅ Sí (sin botón) |
+| **Stats cards** | ⚠️ Opcionales (solo si hay KPIs) | ⚠️ Opcionales (solo si hay métricas) |
 | **Toolbar** | ✅ Con acciones CRUD | ❌ No |
 | **Table selección** | ✅ Checkbox múltiple | ❌ Solo lectura |
 | **Dialog CRUD** | ✅ Formulario | ❌ No |
 | **ConfirmDialog** | ✅ Para eliminar | ❌ No |
 | **Export CSV** | ✅ Sí | ⚠️ Opcional |
-| **Botón refresh** | ⚠️ Opcional | ✅ En header card |
-| **Loading state** | ⚠️ Opcional | ✅ Con spinner |
+| **Botón refresh** | ⚠️ Opcional (en toolbar o caption) | ✅ Siempre (sin header card) |
+| **Loading state** | ⚠️ Opcional | ✅ Con spinner central |
 | **Empty state** | ✅ Simple | ✅ Elaborado con ícono |
 
 ---
@@ -987,6 +981,204 @@ const statsCardStyles = {
 
 ---
 
+## 🎨 **PATRÓN DE DIALOGS (p-dialog)**
+
+### ✅ Estándar Usado en Products (Referencia)
+
+**Características principales:**
+- ✅ Header dinámico: `"Editar X" vs "Nuevo X"`
+- ✅ Secciones organizadas con h6 + border-b
+- ✅ Grid cols-12 para layout responsivo
+- ✅ Footer con botones: Cancelar (outlined) + Guardar
+- ✅ Validaciones con `*ngIf="submitted && !campo"`
+- ✅ ng-template para content y footer
+- ✅ Modal, no draggable, no resizable
+
+### 📝 Template HTML
+
+```html
+<p-dialog 
+  [(visible)]="itemDialog" 
+  [style]="{ width: '90vw', 'max-width': '700px' }" 
+  [modal]="true"
+  [draggable]="false" 
+  [resizable]="false"
+  [header]="item.id ? 'Editar Item' : 'Nuevo Item'">
+  
+  <ng-template #content>
+    <!-- Sección 1: Información Básica -->
+    <div class="mb-6">
+      <h6 class="text-lg font-semibold mb-4 border-b pb-2">Información Básica</h6>
+      <div class="grid grid-cols-12 gap-4">
+        
+        <!-- Campo prioritario (más ancho) -->
+        <div class="col-span-12 md:col-span-8">
+          <label for="name" class="block text-sm font-medium mb-2">
+            Nombre del Item *
+          </label>
+          <input 
+            id="name" 
+            pInputText 
+            [(ngModel)]="item.name" 
+            required 
+            autofocus 
+            placeholder="Ingrese el nombre" 
+            fluid 
+            class="w-full" 
+          />
+          <small class="text-red-500" *ngIf="submitted && !item.name">
+            El nombre es obligatorio.
+          </small>
+        </div>
+
+        <!-- Campo secundario (más angosto) -->
+        <div class="col-span-12 md:col-span-4">
+          <label for="code" class="block text-sm font-medium mb-2">Código</label>
+          <input 
+            id="code" 
+            pInputText 
+            [(ngModel)]="item.code" 
+            placeholder="SKU o código interno" 
+            fluid 
+          />
+        </div>
+
+        <!-- Campo full width -->
+        <div class="col-span-12">
+          <label for="desc" class="block text-sm font-medium mb-2">Descripción</label>
+          <textarea 
+            id="desc" 
+            pTextarea 
+            rows="3" 
+            [(ngModel)]="item.description" 
+            placeholder="Descripción detallada" 
+            fluid>
+          </textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sección 2: Configuración -->
+    <div class="mb-6">
+      <h6 class="text-lg font-semibold mb-4 border-b pb-2">Configuración</h6>
+      <div class="grid grid-cols-12 gap-4">
+        
+        <!-- Select dropdown -->
+        <div class="col-span-12 md:col-span-6">
+          <label class="block text-sm font-medium mb-2">Categoría *</label>
+          <p-select
+            [options]="categories"
+            optionLabel="label"
+            optionValue="value"
+            [(ngModel)]="item.category"
+            placeholder="Selecciona una categoría"
+            fluid
+          />
+          <small class="text-red-500" *ngIf="submitted && !item.category">
+            La categoría es obligatoria.
+          </small>
+        </div>
+
+        <!-- Input number -->
+        <div class="col-span-12 md:col-span-6">
+          <label for="stock" class="block text-sm font-medium mb-2">Stock Mínimo *</label>
+          <p-inputnumber 
+            id="stock" 
+            [(ngModel)]="item.min_stock" 
+            [min]="0" 
+            [maxFractionDigits]="2"
+            placeholder="0" 
+            fluid 
+          />
+          <small class="text-red-500" *ngIf="submitted && (item.min_stock == null || item.min_stock < 0)">
+            El stock mínimo debe ser mayor o igual a 0.
+          </small>
+        </div>
+
+        <!-- Checkbox -->
+        <div class="col-span-12 md:col-span-6">
+          <label class="block text-sm font-medium mb-2">Estado</label>
+          <div class="flex items-center mt-2">
+            <p-checkbox [(ngModel)]="item.status" [binary]="true" inputId="status" />
+            <label for="status" class="ml-2">Item activo</label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #footer>
+    <div class="flex justify-end gap-3">
+      <p-button 
+        label="Cancelar" 
+        icon="pi pi-times" 
+        severity="secondary" 
+        [outlined]="true" 
+        (onClick)="hideDialog()" 
+      />
+      <p-button 
+        label="Guardar Item" 
+        icon="pi pi-check" 
+        [loading]="submitted" 
+        (onClick)="saveItem()" 
+      />
+    </div>
+  </ng-template>
+</p-dialog>
+```
+
+### 🎯 Guía de Grid Columns en Dialog
+
+| Tamaño Campo | Desktop | Mobile | Ejemplo |
+|--------------|---------|--------|---------|
+| **Prioritario** | `col-span-8` | `col-span-12` | Nombre, Descripción |
+| **Secundario** | `col-span-4` | `col-span-12` | Código, SKU |
+| **Mitad** | `col-span-6` | `col-span-12` | Categoría, Stock |
+| **Full Width** | `col-span-12` | `col-span-12` | Textarea, Notas |
+
+### 📋 Reglas de Validación
+
+```typescript
+// En el componente .ts
+saveItem(): void {
+  this.submitted.set(true);
+  const item = this.itemForm();
+
+  // Validar campos obligatorios
+  if (!item?.name?.trim()) {
+    this.messageService.add({
+      severity: 'warn',
+      summary: 'Validación',
+      detail: 'Complete los campos obligatorios'
+    });
+    return;
+  }
+
+  // Validar números
+  if (item.min_stock == null || item.min_stock < 0) {
+    return;
+  }
+
+  // Proceder con guardado...
+}
+```
+
+### ✅ Checklist Dialog
+
+- [ ] Width: `90vw` con max-width `700px`
+- [ ] Header dinámico con ternario `item.id ? 'Editar' : 'Nuevo'`
+- [ ] ng-template #content y #footer
+- [ ] Secciones con h6 + border-b
+- [ ] Grid cols-12 con gap-4
+- [ ] Labels con `block text-sm font-medium mb-2`
+- [ ] Inputs con `fluid` attribute
+- [ ] Validaciones con `*ngIf="submitted && !campo"`
+- [ ] Footer con gap-3, justify-end
+- [ ] Botón cancelar: secondary outlined
+- [ ] Botón guardar: con loading state
+
+---
+
 ## 📋 Checklist de Implementación
 
 ### ✅ Estructura
@@ -1089,16 +1281,24 @@ const statsCardStyles = {
 | Aspecto | Products (Patrón A) | Suggestions (Patrón B) |
 |---------|---------------------|------------------------|
 | **Propósito** | CRUD maestro productos | Análisis de reposición |
-| **Layout** | Grid + Toolbar + Table | Grid + Stats + Table |
-| **Stats Cards** | ❌ No tiene | ✅ 4 KPIs superiores |
-| **Toolbar** | ✅ Nuevo/Eliminar/Export | ❌ Solo refresh en header |
+| **Layout** | Grid + Header + Stats + Toolbar + Table | Grid + Header + Stats + Table |
+| **Stats Cards** | ✅ 4 KPIs opcionales | ✅ 4 KPIs opcionales |
+| **Componente Stats** | ✅ `<app-stats-card>` | ✅ `<app-stats-card>` |
+| **Toolbar** | ✅ Nuevo/Eliminar/Export | ❌ No necesita |
+| **Botón Actualizar** | ✅ En caption tabla | ✅ En caption tabla |
+| **Búsqueda** | ✅ En caption tabla | ❌ Opcional |
 | **Selección** | ✅ Múltiple con checkbox | ❌ Solo lectura |
 | **Dialog** | ✅ Formulario CRUD | ❌ No necesita |
 | **ConfirmDialog** | ✅ Para eliminar | ❌ No necesita |
 | **Empty State** | Simple "No hay datos" | Elaborado "¡Todo bien!" |
-| **Service** | product.service.ts | Directo en component |
+| **Archivos** | `.html`, `.ts`, `.service`, `.interface` | `.html`, `.ts`, `.service`, `.interface` |
 
-**Conclusión:** ❌ **NO fusionar** - Son patrones complementarios para casos de uso diferentes
+**Conclusión:** 
+- ❌ **NO fusionar** componentes (diferentes propósitos)
+- ✅ **SÍ unificar** diseño con `<app-stats-card>`
+- ✅ **Botón refresh en caption** de tabla (AMBOS patrones)
+- ✅ **Stats opcionales** en ambos patrones
+- ✅ **Archivos separados obligatorios** para mantenibilidad
 
 ---
 
@@ -1127,10 +1327,10 @@ const statsCardStyles = {
 ### Para Patrón A (CRUD):
 - [ ] Grid cols-12 como wrapper principal
 - [ ] Header card con icono + título + descripción
-- [ ] Stats cards opcionales si hay KPIs relevantes
+- [ ] Stats cards opcionales (solo si hay KPIs relevantes)
 - [ ] Toolbar con botones: Nuevo, Eliminar (deshabilitado), Exportar
 - [ ] Table con selección múltiple (checkbox)
-- [ ] Búsqueda global con iconfield
+- [ ] **Botón "Actualizar" en caption de tabla** (con búsqueda global)
 - [ ] Dialog formulario con grid interno
 - [ ] ConfirmDialog para confirmaciones
 - [ ] Toast notifications
@@ -1138,19 +1338,35 @@ const statsCardStyles = {
 - [ ] inject() para servicios
 - [ ] ViewChild para tabla (export)
 - [ ] Empty state básico
+- [ ] Archivos separados: `.html`, `.ts`, `.service.ts`, `interfaces/*.interface.ts`
 
 ### Para Patrón B (Read-Only):
 - [ ] Grid cols-12 como wrapper principal
-- [ ] Header card con icono + título + descripción + botón refresh
-- [ ] **4 Stats cards obligatorias** con colores diferentes
+- [ ] Header card con icono + título + descripción (SIN botón)
+- [ ] **Stats cards opcionales** (solo si hay métricas relevantes)
 - [ ] Table sin selección, solo lectura
+- [ ] **Botón "Actualizar" en caption de tabla** (p-button-sm p-button-outlined)
 - [ ] Loading state con spinner central
 - [ ] Empty state elaborado con ícono grande y mensaje positivo
 - [ ] Signals para estado
 - [ ] inject() para servicios
-- [ ] Métodos de cálculo para stats (getUrgentCount, etc.)
+- [ ] Computed signals para stats (si las usa)
 - [ ] Toast notifications
 - [ ] NO Dialog, NO ConfirmDialog, NO Toolbar
+- [ ] Archivos separados: `.html`, `.ts`, `.service.ts`, `.interface.ts`
+
+**Cuándo usar stats cards:**
+- ✅ Cuando hay métricas clave que aportan valor (ej: `reorder-suggestions` con 4 KPIs)
+- ❌ Cuando solo es un listado sin análisis (ej: `stocks-low`, `system-logs`)
+
+**Estructura de archivos obligatoria:**
+```
+componente/
+  ├── componente.component.html
+  ├── componente.component.ts
+  ├── componente.service.ts
+  └── componente.interface.ts
+```
 
 ---
 
@@ -1191,12 +1407,242 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { SelectModule } from 'primeng/select';
+import { MultiSelectModule } from 'primeng/multiselect';
 import { InputNumberModule } from 'primeng/inputnumber';
+import { CheckboxModule } from 'primeng/checkbox';
+import { PasswordModule } from 'primeng/password';
 
 // Services & Interfaces
 import { YourService } from './your.service';
 import { YourInterface } from './your.interface';
 ```
+
+---
+
+## 🎯 Dropdowns y MultiSelects en Diálogos y Tablas
+
+### Problema Común
+Los `p-select` y `p-multiSelect` dentro de diálogos o tablas con scroll se cierran automáticamente cuando el usuario hace scroll en el contenedor padre, impidiendo seleccionar elementos que no están visibles inicialmente.
+
+### Solución: `appendTo="body"` + `[style]`
+
+**Patrón Obligatorio para `p-select`:**
+```html
+<!-- ✅ CORRECTO: Dropdown dentro de diálogo/tabla -->
+<p-select
+  [options]="items()"
+  [(ngModel)]="selectedValue"
+  optionLabel="name"
+  optionValue="id"
+  appendTo="body"
+  [style]="{ width: '100%' }"
+  [panelStyle]="{ 'max-height': '300px' }"
+  placeholder="Selecciona una opción"
+/>
+```
+
+**Patrón Obligatorio para `p-multiSelect`:**
+```html
+<!-- ✅ CORRECTO: MultiSelect dentro de diálogo -->
+<p-multiSelect
+  [options]="items()"
+  [(ngModel)]="selectedValues"
+  optionLabel="name"
+  optionValue="id"
+  appendTo="body"
+  [style]="{ width: '100%' }"
+  [panelStyle]="{ 'max-height': '300px' }"
+  placeholder="Selecciona uno o más"
+  [filter]="true"
+  filterPlaceholder="Buscar..."
+  display="chip"
+/>
+```
+
+**Por qué funciona:**
+- `appendTo="body"` renderiza el panel del dropdown directamente en el `<body>` del documento
+- `[style]="{ width: '100%' }"` asegura que el componente ocupe todo el ancho disponible
+- `[panelStyle]` controla el tamaño del panel desplegable
+- Esto evita que el panel quede atrapado dentro de contenedores con `overflow: auto` o `overflow: hidden`
+- El panel permanece visible y accesible independientemente del scroll del contenedor padre
+
+### Contenedores: `overflow-visible`
+
+Cuando usas `appendTo="body"`, el contenedor debe permitir que el panel sea visible:
+
+```html
+<!-- ❌ INCORRECTO: overflow-auto corta el panel -->
+<div class="overflow-auto max-h-96">
+  <p-table>
+    <ng-template pTemplate="body" let-item>
+      <p-select .../>  <!-- Se cierra al hacer scroll -->
+    </ng-template>
+  </p-table>
+</div>
+
+<!-- ✅ CORRECTO: overflow-visible permite ver el panel -->
+<div class="overflow-visible">
+  <p-table>
+    <ng-template pTemplate="body" let-item>
+      <p-select appendTo="body" .../>  <!-- Funciona correctamente -->
+    </ng-template>
+  </p-table>
+</div>
+```
+
+### Casos de Uso
+
+**1. Dropdowns en tablas editables:**
+```html
+<!-- Ejemplo: BOMs - Selección de componentes -->
+<p-table [value]="bom().components">
+  <ng-template pTemplate="body" let-component>
+    <td>
+      <p-select
+        [options]="availableProducts()"
+        [(ngModel)]="component.component_id"
+        optionLabel="name"
+        optionValue="id"
+        placeholder="Selecciona componente"
+        appendTo="body"
+        [style]="{ width: '100%' }"
+        [panelStyle]="{ 'max-height': '300px' }"
+      />
+    </td>
+  </ng-template>
+</p-table>
+```
+
+**2. Dropdowns en diálogos con formularios:**
+```html
+<!-- Ejemplo: Work Orders - Selección de producto -->
+<p-dialog [(visible)]="displayDialog" [style]="{ width: '700px' }">
+  <div class="grid grid-cols-12 gap-4">
+    <div class="col-span-12">
+      <label>Producto *</label>
+      <p-select
+        [options]="products()"
+        [(ngModel)]="entity().product_id"
+        optionLabel="name"
+        optionValue="id"
+        appendTo="body"
+        [style]="{ width: '100%' }"
+      />
+    </div>
+  </div>
+</p-dialog>
+```
+
+**3. MultiSelect en diálogos (asignación múltiple):**
+```html
+<!-- Ejemplo: Usuarios - Asignación de roles -->
+<p-dialog [(visible)]="userDialog">
+  <div class="col-span-12">
+    <label for="roles">Asignar Roles</label>
+    <p-multiSelect
+      id="roles"
+      [(ngModel)]="currentUser.role_ids"
+      [options]="availableRoles()"
+      optionLabel="name"
+      optionValue="id"
+      placeholder="Selecciona uno o más roles"
+      [filter]="true"
+      filterPlaceholder="Buscar roles"
+      display="chip"
+      appendTo="body"
+      [style]="{ width: '100%' }"
+    />
+  </div>
+</p-dialog>
+```
+
+**4. Dropdowns anidados (tabla dentro de diálogo):**
+```html
+<!-- Ejemplo: BOMs - Unidades en componentes -->
+<p-dialog [(visible)]="displayDialog">
+  <div class="overflow-visible">  <!-- ⚠️ IMPORTANTE -->
+    <p-table [value]="bom().components">
+      <ng-template pTemplate="body" let-item>
+        <p-select
+          [options]="units()"
+          [(ngModel)]="item.unit_id"
+          appendTo="body"
+          [style]="{ width: '100%' }"
+        >
+          <ng-template let-unit pTemplate="item">
+            <div>{{ unit.code }}</div>
+            <small class="text-gray-500">{{ unit.description }}</small>
+          </ng-template>
+        </p-select>
+      </ng-template>
+    </p-table>
+  </div>
+</p-dialog>
+```
+
+### Configuraciones Adicionales
+
+**panelStyle:**
+```html
+<!-- Limitar altura del panel para evitar que ocupe toda la pantalla -->
+<p-select
+  appendTo="body"
+  [style]="{ width: '100%' }"
+  [panelStyle]="{ 'max-height': '300px' }"
+/>
+```
+
+**filter en MultiSelect:**
+```html
+<!-- Habilitar búsqueda en listas largas -->
+<p-multiSelect
+  [options]="largeList"
+  [filter]="true"
+  filterPlaceholder="Buscar..."
+  appendTo="body"
+  [style]="{ width: '100%' }"
+/>
+```
+
+**display en MultiSelect:**
+```html
+<!-- Mostrar seleccionados como chips -->
+<p-multiSelect
+  display="chip"  <!-- chip | comma -->
+  appendTo="body"
+  [style]="{ width: '100%' }"
+/>
+```
+
+### Checklist de Implementación
+
+Al crear/editar componentes con dropdowns en tablas o diálogos:
+
+- [ ] Agregar `appendTo="body"` a todos los `p-select` y `p-multiSelect`
+- [ ] Agregar `[style]="{ width: '100%' }"` para ancho completo
+- [ ] Configurar `[panelStyle]="{ 'max-height': '300px' }"` si es necesario
+- [ ] Cambiar `overflow-auto` a `overflow-visible` en contenedores padre
+- [ ] En `p-multiSelect`: agregar `[filter]="true"` si hay muchas opciones
+- [ ] En `p-multiSelect`: usar `display="chip"` para mejor visualización
+- [ ] Probar scroll en la tabla/diálogo para confirmar que el dropdown no se cierra
+- [ ] Validar que los elementos se pueden seleccionar correctamente
+
+### Troubleshooting
+
+**Síntoma:** Dropdown se cierra al hacer scroll
+- ✅ Solución: Agregar `appendTo="body"`
+
+**Síntoma:** Panel del dropdown está cortado/oculto
+- ✅ Solución: Cambiar contenedor padre a `overflow-visible`
+
+**Síntoma:** Dropdown no ocupa todo el ancho
+- ✅ Solución: Agregar `[style]="{ width: '100%' }"`
+
+**Síntoma:** Dropdown no se posiciona correctamente
+- ✅ Solución: Verificar que no haya múltiples `position: relative` anidados
+
+**Síntoma:** MultiSelect no muestra chips
+- ✅ Solución: Agregar `display="chip"`
 
 ---
 

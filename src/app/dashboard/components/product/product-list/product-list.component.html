@@ -49,11 +49,23 @@
 
   <ng-template #caption>
     <div class="flex items-center justify-between">
-      <h5 class="m-0">Gestionar Productos</h5>
-      <p-iconfield>
-        <p-inputicon styleClass="pi pi-search" />
-        <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Buscar..." />
-      </p-iconfield>
+      <div class="flex items-center gap-2">
+        <h5 class="m-0">Gestionar Productos</h5>
+      </div>
+      <div class="flex items-center gap-2">
+        <p-iconfield>
+          <p-inputicon styleClass="pi pi-search" />
+          <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Buscar..." />
+        </p-iconfield>
+        <button
+          pButton
+          icon="pi pi-refresh"
+          label="Actualizar"
+          class="p-button-outlined p-button-sm"
+          (click)="cargarProductos()"
+          [loading]="loading"
+        ></button>
+      </div>
     </div>
   </ng-template>
 

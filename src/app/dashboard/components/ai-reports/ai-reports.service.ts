@@ -15,28 +15,40 @@ export class AIReportsService {
    * Genera un reporte usando IA a partir de lenguaje natural
    */
   generateReport(query: string, limit: number = 50): Observable<AIReportResponse> {
-    const request: AIReportRequest = { query, limit };
+    const request: AIReportRequest = { 
+      query, 
+      format: 'json',
+      limit 
+    };
     return this.http.post<AIReportResponse>(this.API_URL, request);
   }
 
   /**
-   * Exporta el reporte a CSV
+   * Exporta el reporte en formato específico (CSV, Excel, PDF)
    */
-  exportToCSV(query: string, limit: number = 100): Observable<Blob> {
-    const request: AIReportRequest = { query, limit };
-    return this.http.post(`${this.API_URL}/csv`, request, {
+  exportReport(query: string, format: 'csv' | 'excel' | 'pdf', limit: number = 100): Observable<Blob> {
+    const request: AIReportRequest = { 
+      query, 
+      format,
+      limit 
+    };
+    return this.http.post(this.API_URL, request, {
       responseType: 'blob'
     });
   }
 
   /**
-   * Descarga el archivo CSV
+   * Descarga un archivo (CSV, Excel o PDF)
    */
-  downloadCSV(blob: Blob, filename: string = 'reporte.csv'): void {
+  downloadFile(blob: Blob, format: 'csv' | 'excel' | 'pdf', baseFilename: string = 'reporte'): void {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = filename;
+    
+    const timestamp = new Date().toISOString().split('T')[0];
+    const extension = format === 'excel' ? 'xlsx' : format;
+    link.download = `${baseFilename}_${timestamp}.${extension}`;
+    
     link.click();
     window.URL.revokeObjectURL(url);
   }

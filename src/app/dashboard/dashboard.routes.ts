@@ -14,6 +14,7 @@ import { RolesComponent } from './components/roles/roles.component';
 import { BomsComponent } from './components/production/boms/boms.component';
 import { WorkOrdersComponent } from './components/production/work-orders/work-orders.component';
 import { ExecutionComponent } from './components/production/execution/execution.component';
+import { ProductionReportsComponent } from './components/production/reports/production-reports.component';
 
 export const dashboardRoutes: Routes = [
   {
@@ -36,9 +37,14 @@ export const dashboardRoutes: Routes = [
           import('./components/warehouses/warehouses.routes').then(m => m.warehousesRoutes)
       },
       {
-        path: 'movements',
+        path: 'inventory',
         loadChildren: () =>
           import('./components/inventory/inventory.routes').then(m => m.inventoryRoutes)
+      },
+      {
+        path: 'movements',
+        loadChildren: () =>
+          import('./components/movements/movements.routes').then(m => m.movementsRoutes)
       },
       { path: 'stocks/low', component: StocksLowComponent },
       { path: 'stocks/reorder-suggestions', component: ReorderSuggestionsComponent },
@@ -55,7 +61,7 @@ export const dashboardRoutes: Routes = [
       { path: 'production/boms', component: BomsComponent },
       { path: 'production/work-orders', component: WorkOrdersComponent },
       { path: 'production/execution', component: ExecutionComponent },
-      // TODO: { path: 'production/reports', component: ProductionReportsComponent },
+      { path: 'production/reports', component: ProductionReportsComponent },
       
       // Planificación (SPRINT 4 - Placeholders)
       // TODO: { path: 'demand', component: DemandComponent },

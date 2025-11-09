@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, signal } from '@angular/core';
+import { Component, OnInit, ViewChild, signal, inject } from '@angular/core';
 import { SharedModule } from '../../../../shared/shared.module';
 import { Table } from 'primeng/table';
 import { ConfirmationService, MessageService } from 'primeng/api';
@@ -20,14 +20,19 @@ export interface SupplierUI {
   selector: 'app-supplier-list',
   standalone: true,
   imports: [SharedModule],
+  providers: [MessageService, ConfirmationService],
   templateUrl: './supplier-list.component.html'
 })
 export class SupplierListComponent implements OnInit {
+  private supplierService = inject(SupplierService);
+  private messageService = inject(MessageService);
+  private confirmationService = inject(ConfirmationService);
+
   suppliers = signal<SupplierUI[]>([]);
   supplierDialog = false;
   supplier: Partial<SupplierUI> = {};
   submitted = false;
-  loading = false;
+  loading = signal(false);
 
   @ViewChild('dt') dt!: Table;
 
@@ -43,18 +48,12 @@ export class SupplierListComponent implements OnInit {
     { field: 'status',  header: 'Status' }
   ];
 
-  constructor(
-    private supplierService: SupplierService,
-    private toast: MessageService,
-    private confirm: ConfirmationService
-  ) {}
-
   ngOnInit(): void {
     this.loadSuppliers();
   }
 
   loadSuppliers(): void {
-    this.loading = true;
+    this.loading.set(true);
     this.supplierService.listar().subscribe({
       next: (res) => {
         console.info("SUPPLIERS OBTAINED", res);
@@ -69,11 +68,11 @@ export class SupplierListComponent implements OnInit {
           status: x.status
         })) as SupplierUI[];
         this.suppliers.set(data);
-        this.loading = false;
+        this.loading.set(false);
       },
       error: (err) => {
         console.error('Error loading suppliers', err);
-        this.loading = false;
+        this.loading.set(false);
       }
     });
   }
@@ -129,14 +128,22 @@ export class SupplierListComponent implements OnInit {
       };
       this.supplierService.actualizarProveedor(payload).subscribe({
         next: () => {
-          this.toast.add({ severity: 'success', summary: 'Success', detail: 'Supplier updated', life: 3000 });
+          this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Proveedor actualizado', life: 3000 });
           const arr = [...this.suppliers()];
           const idx = arr.findIndex(s => s.id === this.supplier.id);
           if (idx > -1) arr[idx] = { ...arr[idx], ...this.supplier as SupplierUI };
           this.suppliers.set(arr);
           this.supplierDialog = false;
         },
-        error: (err: any) => console.error('Error updating supplier', err)
+        error: (err: any) => {
+          console.error('Error updating supplier', err);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: err.error?.message || 'No se pudo actualizar el proveedor',
+            life: 3000
+          });
+        }
       });
     } else {
       const payload: SupplierRequest = {
@@ -149,7 +156,7 @@ export class SupplierListComponent implements OnInit {
       };
       this.supplierService.registrarProveedor(payload).subscribe({
         next: (res: any) => {
-          this.toast.add({ severity: 'success', summary: 'Success', detail: 'Supplier created', life: 3000 });
+          this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Proveedor creado', life: 3000 });
           if (res?.data) {
             const x = res.data;
             const created: SupplierUI = {
@@ -168,15 +175,23 @@ export class SupplierListComponent implements OnInit {
           }
           this.supplierDialog = false;
         },
-        error: (err: any) => console.error('Error creating supplier', err)
+        error: (err: any) => {
+          console.error('Error creating supplier', err);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: err.error?.message || 'No se pudo crear el proveedor',
+            life: 3000
+          });
+        }
       });
     }
   }
 
   confirmDelete(row: SupplierUI) {
-    this.confirm.confirm({
-      message: `Delete supplier "${row.name}"?`,
-      header: 'Confirmation',
+    this.confirmationService.confirm({
+      message: `¿Eliminar el proveedor "${row.name}"?`,
+      header: 'Confirmar Eliminación',
       icon: 'pi pi-exclamation-triangle',
       accept: () => this.deleteSupplier(row.id)
     });
@@ -185,28 +200,44 @@ export class SupplierListComponent implements OnInit {
   deleteSupplier(id: number) {
     this.supplierService.eliminarProveedor(id).subscribe({
       next: () => {
-        this.toast.add({ severity: 'success', summary: 'Success', detail: 'Supplier deleted', life: 3000 });
+        this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Proveedor eliminado', life: 3000 });
         this.suppliers.set(this.suppliers().filter(s => s.id !== id));
       },
-      error: (err: any) => console.error('Error deleting supplier', err)
+      error: (err: any) => {
+        console.error('Error deleting supplier', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: err.error?.message || 'No se pudo eliminar el proveedor',
+          life: 3000
+        });
+      }
     });
   }
 
   reactivateSupplier(row: SupplierUI) {
     this.supplierService.reactivarProveedor(row.id).subscribe({
       next: () => {
-        this.toast.add({ severity: 'info', summary: 'Reactivated', detail: 'Supplier reactivated', life: 3000 });
+        this.messageService.add({ severity: 'info', summary: 'Reactivado', detail: 'Proveedor reactivado', life: 3000 });
         const arr = [...this.suppliers()];
         const idx = arr.findIndex(s => s.id === row.id);
         if (idx > -1) arr[idx] = { ...arr[idx], status: true };
         this.suppliers.set(arr);
       },
-      error: (err: any) => console.error('Error reactivating supplier', err)
+      error: (err: any) => {
+        console.error('Error reactivating supplier', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: err.error?.message || 'No se pudo reactivar el proveedor',
+          life: 3000
+        });
+      }
     });
   }
 
   // helpers estado
-  getStatusLabel(v: boolean) { return v ? 'Active' : 'Inactive'; }
+  getStatusLabel(v: boolean) { return v ? 'Activo' : 'Inactivo'; }
   getStatusSeverity(v: boolean) { return v ? 'success' : 'danger'; }
 
   // helper para dígitos

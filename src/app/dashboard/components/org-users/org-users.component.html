@@ -1,242 +1,257 @@
-<div class="card">
-  <div class="flex justify-between items-start mb-6">
-    <div>
-      <h2 class="text-3xl font-bold text-surface-900 dark:text-surface-0 mb-2">
-        <i class="pi pi-users mr-2"></i>
-        Usuarios de la Organización
-      </h2>
-      <p class="text-surface-600 dark:text-surface-300">
-        Gestiona los usuarios de tu organización
-      </p>
-    </div>
-
-    <p-button label="Agregar Usuario" 
-              icon="pi pi-user-plus" 
-              (onClick)="openAddDialog()"
-              [disabled]="loading()">
-    </p-button>
+<div class="grid grid-cols-12 gap-6">
+  <!-- Header Card -->
+  <div class="col-span-12">
+    <p-card>
+      <div class="flex justify-between items-center">
+        <div>
+          <h5 class="text-2xl font-bold mb-2">Usuarios</h5>
+          <p class="text-gray-600">Administra los usuarios de tu organización</p>
+        </div>
+        <div class="text-right">
+          <p class="text-sm text-gray-600">
+            <i class="pi pi-users mr-2"></i>
+            {{ users().length }} / {{ subscriptionLimits()?.max_users || '∞' }} usuarios
+          </p>
+        </div>
+      </div>
+    </p-card>
   </div>
 
-  <!-- Usage Stats -->
-  <div class="mb-6 p-4 bg-surface-50 dark:bg-surface-800 rounded-lg">
-    <div class="flex items-center justify-between mb-3">
-      <div>
-        <p class="text-surface-600 dark:text-surface-300 text-sm mb-1">Usuarios Actuales</p>
-        <p class="text-2xl font-bold text-surface-900 dark:text-surface-0">
-          {{ currentUsers() }} / {{ maxUsers() }}
-        </p>
-      </div>
-      <p-tag [value]="getUsagePercentage() + '%'" 
-             [severity]="getUsageSeverity()"
-             styleClass="text-lg">
-      </p-tag>
-    </div>
-    
-    <div class="w-full bg-surface-200 dark:bg-surface-700 rounded-full h-3">
-      <div class="h-3 rounded-full transition-all duration-300"
-           [ngClass]="{
-             'bg-green-500': getUsageSeverity() === 'success',
-             'bg-blue-500': getUsageSeverity() === 'info',
-             'bg-orange-500': getUsageSeverity() === 'warn',
-             'bg-red-500': getUsageSeverity() === 'danger'
-           }"
-           [style.width.%]="getUsagePercentage()">
-      </div>
-    </div>
+  <!-- Table Card -->
+  <div class="col-span-12">
+    <p-card>
+      <p-toolbar>
+        <ng-template #start>
+          <p-button 
+            label="Nuevo Usuario" 
+            icon="pi pi-plus" 
+            [rounded]="true"
+            [outlined]="true"
+            (click)="showDialog()" 
+            [disabled]="users().length >= (subscriptionLimits()?.max_users || 999999)"
+          />
+        </ng-template>
+        <ng-template #end>
+          <p-button 
+            icon="pi pi-refresh" 
+            [rounded]="true"
+            [outlined]="true"
+            (click)="loadUsers()" 
+            [loading]="loading()"
+          />
+        </ng-template>
+      </p-toolbar>
+
+      <p-table 
+        [value]="users()" 
+        [loading]="loading()"
+        [rowHover]="true"
+        styleClass="p-datatable-gridlines"
+        [tableStyle]="{ 'min-width': '50rem' }"
+        #dt
+      >
+        <ng-template pTemplate="caption">
+          <div class="flex">
+            <span class="p-input-icon-left ml-auto">
+              <i class="pi pi-search"></i>
+              <input 
+                pInputText 
+                type="text" 
+                [(ngModel)]="searchValue"
+                (input)="dt.filterGlobal(searchValue, 'contains')" 
+                placeholder="Buscar..." 
+              />
+            </span>
+          </div>
+        </ng-template>
+
+        <ng-template pTemplate="header">
+          <tr>
+            <th pSortableColumn="photo" style="width: 80px">Avatar</th>
+            <th pSortableColumn="name">Nombre <p-sortIcon field="name" /></th>
+            <th pSortableColumn="email">Email <p-sortIcon field="email" /></th>
+            <th>Roles</th>
+            <th pSortableColumn="status" style="width: 120px">Estado <p-sortIcon field="status" /></th>
+            <th style="width: 150px">Acciones</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-user>
+          <tr>
+            <td>
+              <p-avatar 
+                [image]="user.photo" 
+                [label]="!user.photo ? user.name.charAt(0).toUpperCase() : undefined"
+                shape="circle"
+                size="large"
+              />
+            </td>
+            <td>{{ user.name }}</td>
+            <td>{{ user.email }}</td>
+            <td>
+              <p-tag 
+                *ngFor="let role of user.roles" 
+                [value]="role.role"
+                severity="info"
+                styleClass="mr-2"
+              />
+              <span *ngIf="!user.roles || user.roles.length === 0" class="text-gray-400">Sin roles</span>
+            </td>
+            <td>
+              <p-tag 
+                [value]="user.status ? 'Activo' : 'Inactivo'" 
+                [severity]="user.status ? 'success' : 'danger'"
+              />
+            </td>
+            <td>
+              <p-button 
+                icon="pi pi-pencil" 
+                [rounded]="true"
+                [outlined]="true"
+                severity="info"
+                (click)="editUser(user)"
+                pTooltip="Editar usuario"
+                tooltipPosition="top"
+                styleClass="mr-2"
+              />
+              <p-button 
+                icon="pi pi-trash" 
+                [rounded]="true"
+                [outlined]="true"
+                severity="danger"
+                (click)="deleteUser(user.id)"
+                pTooltip="Eliminar usuario"
+                tooltipPosition="top"
+              />
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="6" class="text-center">No hay usuarios registrados</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </p-card>
   </div>
-
-  <!-- Users Table -->
-  <p-table [value]="users()" 
-           [loading]="loading()"
-           [paginator]="true"
-           [rows]="10"
-           [rowsPerPageOptions]="[10, 25, 50]"
-           [showCurrentPageReport]="true"
-           currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} usuarios"
-           styleClass="p-datatable-sm"
-           dataKey="id">
-    
-    <ng-template pTemplate="header">
-      <tr>
-        <th pSortableColumn="id">
-          ID
-          <p-sortIcon field="id" />
-        </th>
-        <th pSortableColumn="email">
-          Email
-          <p-sortIcon field="email" />
-        </th>
-        <th pSortableColumn="full_name">
-          Nombre Completo
-          <p-sortIcon field="full_name" />
-        </th>
-        <th pSortableColumn="role_id">
-          Rol
-          <p-sortIcon field="role_id" />
-        </th>
-        <th pSortableColumn="status">
-          Estado
-          <p-sortIcon field="status" />
-        </th>
-        <th pSortableColumn="joined_at">
-          Fecha de Registro
-          <p-sortIcon field="joined_at" />
-        </th>
-      </tr>
-    </ng-template>
-
-    <ng-template pTemplate="body" let-user>
-      <tr>
-        <td>{{ user.id }}</td>
-        <td>
-          <div class="flex items-center gap-2">
-            <i class="pi pi-envelope text-surface-400"></i>
-            {{ user.email }}
-          </div>
-        </td>
-        <td>
-          <div class="flex items-center gap-2">
-            <i class="pi pi-user text-surface-400"></i>
-            {{ user.full_name }}
-          </div>
-        </td>
-        <td>
-          <p-tag [value]="getRoleLabel(user.role_id)" 
-                 [severity]="getRoleSeverity(user.role_id)" />
-        </td>
-        <td>
-          <p-tag [value]="getStatusLabel(user.status)" 
-                 [severity]="getStatusSeverity(user.status)"
-                 [icon]="user.status ? 'pi pi-check' : 'pi pi-times'" />
-        </td>
-        <td>{{ user.joined_at | date: 'dd/MM/yyyy HH:mm' }}</td>
-      </tr>
-    </ng-template>
-
-    <ng-template pTemplate="emptymessage">
-      <tr>
-        <td colspan="6" class="text-center py-8">
-          <i class="pi pi-users text-surface-300 dark:text-surface-600" 
-             style="font-size: 3rem"></i>
-          <p class="text-xl text-surface-600 dark:text-surface-300 mt-4">
-            No hay usuarios registrados
-          </p>
-        </td>
-      </tr>
-    </ng-template>
-
-    <ng-template pTemplate="loadingbody">
-      <tr>
-        <td colspan="6" class="text-center py-8">
-          <p-progressSpinner styleClass="w-12 h-12" />
-          <p class="mt-4 text-surface-600 dark:text-surface-300">
-            Cargando usuarios...
-          </p>
-        </td>
-      </tr>
-    </ng-template>
-  </p-table>
 </div>
 
-<!-- Add User Dialog -->
-<p-dialog [(visible)]="showAddDialog" 
-          [modal]="true" 
-          [style]="{ width: '500px' }"
-          [breakpoints]="{ '640px': '90vw' }"
-          header="Agregar Usuario a la Organización">
-  
-  <div class="flex flex-col gap-4">
-    <div>
-      <label for="email" class="block font-medium mb-2">
-        Email <span class="text-red-500">*</span>
-      </label>
-      <input pInputText id="email" 
-             type="email" 
-             [(ngModel)]="newUserEmail" 
-             [ngModelOptions]="{updateOn: 'change'}"
-             placeholder="usuario@ejemplo.com"
-             class="w-full"
-             [disabled]="addingUser()" />
+<!-- Dialog -->
+<p-dialog 
+  [(visible)]="userDialog" 
+  [header]="editingUser() ? 'Editar Usuario' : 'Nuevo Usuario'"
+  [modal]="true"
+  [style]="{ width: '90vw', 'max-width': '700px' }"
+  [draggable]="false"
+  [resizable]="false"
+>
+  <div class="grid grid-cols-12 gap-4">
+    <!-- Información General -->
+    <div class="col-span-12">
+      <h6 class="text-lg font-semibold mb-3 pb-2 border-b">Información General</h6>
     </div>
 
-    <div>
-      <label for="fullName" class="block font-medium mb-2">
-        Nombre Completo <span class="text-red-500">*</span>
-      </label>
-      <input pInputText id="fullName" 
-             type="text" 
-             [(ngModel)]="newUserFullName" 
-             [ngModelOptions]="{updateOn: 'change'}"
-             placeholder="Juan Pérez"
-             class="w-full"
-             [disabled]="addingUser()" />
+    <!-- Nombre -->
+    <div class="col-span-12">
+      <label for="name" class="block mb-2">Nombre</label>
+      <input 
+        id="name"
+        type="text" 
+        pInputText 
+        [(ngModel)]="currentUser.name"
+        placeholder="Nombre completo"
+        class="w-full"
+        required
+      />
     </div>
 
-    <div>
-      <label for="password" class="block font-medium mb-2">
-        Contraseña <span class="text-red-500">*</span>
-      </label>
-      <input pInputText id="password" 
-             type="password" 
-             [(ngModel)]="newUserPassword" 
-             [ngModelOptions]="{updateOn: 'change'}"
-             placeholder="Mínimo 6 caracteres"
-             class="w-full"
-             [disabled]="addingUser()" />
-      <small class="text-surface-500 dark:text-surface-400">
-        Mínimo 6 caracteres
+    <!-- Email -->
+    <div class="col-span-12">
+      <label for="email" class="block mb-2">Email</label>
+      <input 
+        id="email"
+        type="email" 
+        pInputText 
+        [(ngModel)]="currentUser.email"
+        placeholder="usuario@ejemplo.com"
+        class="w-full"
+        required
+      />
+    </div>
+
+    <!-- Password (solo para crear) -->
+    <div class="col-span-12" *ngIf="!editingUser()">
+      <label for="password" class="block mb-2">Contraseña</label>
+      <p-password 
+        id="password"
+        [(ngModel)]="currentUser.password"
+        placeholder="Mínimo 6 caracteres"
+        [toggleMask]="true"
+        [feedback]="false"
+        styleClass="w-full"
+        [inputStyleClass]="'w-full'"
+      />
+    </div>
+
+    <!-- Roles -->
+    <div class="col-span-12">
+      <h6 class="text-lg font-semibold mb-3 pb-2 border-b">Roles</h6>
+    </div>
+
+    <div class="col-span-12">
+      <label for="roles" class="block mb-2">Asignar Roles</label>
+      <p-multiSelect
+        id="roles"
+        [(ngModel)]="currentUser.role_ids"
+        [options]="availableRoles()"
+        optionLabel="name"
+        optionValue="id"
+        placeholder="Selecciona uno o más roles"
+        [filter]="true"
+        filterPlaceholder="Buscar roles"
+        display="chip"
+        appendTo="body"
+        [style]="{ width: '100%' }"
+        [panelStyle]="{ 'max-height': '300px' }"
+      />
+      <small class="text-gray-600 block mt-1">
+        Los roles definen los permisos del usuario en el sistema
       </small>
     </div>
 
-    <div>
-      <label for="role" class="block font-medium mb-2">
-        Rol <span class="text-red-500">*</span>
-      </label>
-      <p-select id="role" 
-                [(ngModel)]="newUserRoleId" 
-                [ngModelOptions]="{updateOn: 'change'}"
-                [options]="roleOptions" 
-                optionLabel="label" 
-                optionValue="value"
-                placeholder="Seleccionar rol"
-                styleClass="w-full"
-                [disabled]="addingUser()">
-      </p-select>
+    <!-- Estado (solo para editar) -->
+    <div class="col-span-12" *ngIf="editingUser()">
+      <h6 class="text-lg font-semibold mb-3 pb-2 border-b">Estado</h6>
     </div>
 
-    <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-      <div class="flex items-start gap-2">
-        <i class="pi pi-info-circle text-blue-500 mt-1"></i>
-        <div>
-          <p class="text-sm text-blue-900 dark:text-blue-100">
-            <strong>Roles:</strong>
-          </p>
-          <ul class="text-sm text-blue-800 dark:text-blue-200 mt-2 space-y-1">
-            <li><strong>Administrador:</strong> Acceso completo al sistema</li>
-            <li><strong>Usuario:</strong> Acceso estándar con permisos de edición</li>
-            <li><strong>Solo Lectura:</strong> Solo puede ver información</li>
-          </ul>
-        </div>
-      </div>
+    <div class="col-span-12" *ngIf="editingUser()">
+      <label for="status" class="flex items-center gap-2 cursor-pointer">
+        <p-checkbox 
+          [(ngModel)]="currentUser.status" 
+          [binary]="true"
+          inputId="status"
+        />
+        <span>Usuario activo</span>
+      </label>
     </div>
   </div>
 
   <ng-template pTemplate="footer">
-    <div class="flex justify-end gap-2">
-      <p-button label="Cancelar" 
-                icon="pi pi-times" 
-                [outlined]="true"
-                severity="secondary"
-                (onClick)="showAddDialog.set(false)"
-                [disabled]="addingUser()">
-      </p-button>
-      <p-button label="Agregar Usuario" 
-                icon="pi pi-check" 
-                (onClick)="addUser()"
-                [disabled]="addingUser()"
-                [loading]="addingUser()">
-      </p-button>
-    </div>
+    <p-button 
+      label="Cancelar" 
+      icon="pi pi-times" 
+      [rounded]="true"
+      [outlined]="true"
+      (click)="userDialog = false"
+    />
+    <p-button 
+      label="Guardar" 
+      icon="pi pi-check" 
+      [rounded]="true"
+      [outlined]="true"
+      (click)="saveUser()"
+    />
   </ng-template>
 </p-dialog>
 
