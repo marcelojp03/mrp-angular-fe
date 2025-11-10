@@ -50,4 +50,15 @@ export class OrgUsersService {
   deleteUser(id: number): Observable<{ success: boolean; message: string }> {
     return this.http.delete<{ success: boolean; message: string }>(`${this.API_URL}/${id}`);
   }
+
+  /**
+   * Resetea la contraseña de un usuario (solo admin)
+   * No requiere la contraseña anterior
+   */
+  resetPassword(id: number, password: string): Observable<{ success: boolean; message: string }> {
+    return this.http.put<{ success: boolean; message: string }>(
+      `${this.API_URL}/${id}/password`,
+      { password }
+    );
+  }
 }

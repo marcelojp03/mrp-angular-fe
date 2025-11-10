@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 
 import { environment } from '../../../environments/environment';
@@ -80,6 +80,48 @@ export class AuthService {
     };
 
     return this.http.post<LoginSuccessResponse | LoginErrorResponse>(`${this.apiUrl}/auth/login`, credentials, httpOptions);
+  }
+
+  /**
+   * Renueva el access_token usando el refresh_token
+   * Endpoint: POST /auth/refresh
+   * Body: { "refresh_token": "..." }
+   * Respuesta: { "access_token": "...", "token": "..." }
+   */
+  refreshAccessToken(): Observable<{ access_token: string; token: string }> {
+    const refreshToken = localStorage.getItem('refresh_token');
+    
+    if (!refreshToken) {
+      console.error('[AuthService] No hay refresh_token disponible');
+      return throwError(() => new Error('No refresh token available'));
+    }
+
+    const httpOptions = {
+      headers: new HttpHeaders({
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${refreshToken}` // Backend acepta refresh_token en header
+      })
+    };
+
+    return this.http.post<{ access_token: string; token: string }>(
+      `${this.apiUrl}/auth/refresh`, 
+      { refresh_token: refreshToken }, // También en body por compatibilidad
+      httpOptions
+    ).pipe(
+      map((response) => {
+        // Actualizar solo el access_token, mantener refresh_token
+        localStorage.setItem('token', response.access_token);
+        localStorage.setItem('access_token', response.access_token);
+        console.log('[AuthService] Access token renovado exitosamente');
+        return response;
+      }),
+      catchError((error) => {
+        console.error('[AuthService] Error al renovar token:', error);
+        // Si falla el refresh, limpiar sesión
+        this.clearExpiredSession();
+        return throwError(() => error);
+      })
+    );
   }
 
   loginWithRefreshToken(): Observable<any> {
@@ -195,6 +237,20 @@ export class AuthService {
   // Método para limpiar el token de autenticación del almacenamiento local
   clearToken(): void {
     localStorage.removeItem(this.tokenKey);
+  }
+
+  /**
+   * Cambia la contraseña del usuario autenticado
+   * Requiere la contraseña actual por seguridad
+   */
+  changePassword(currentPassword: string, newPassword: string): Observable<{ success: boolean; message: string }> {
+    return this.http.put<{ success: boolean; message: string }>(
+      `${this.apiUrl}/auth/change-password`,
+      {
+        current_password: currentPassword,
+        new_password: newPassword
+      }
+    );
   }
   getidUsuario(): number | null {
     const user = this.getCurrentUser();

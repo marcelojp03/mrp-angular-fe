@@ -33,8 +33,10 @@ export class OrgUsersComponent implements OnInit {
   
   // Dialog
   userDialog = false;
+  resetPasswordDialog = false;
   searchValue = '';
   currentUser: Partial<CreateUserRequest & UpdateUserRequest & { id?: number }> = {};
+  newPassword = '';
 
   ngOnInit(): void {
     this.loadUsers();
@@ -224,6 +226,58 @@ export class OrgUsersComponent implements OnInit {
               detail: err.error?.message || 'Error al eliminar el usuario' 
             });
           }
+        });
+      }
+    });
+  }
+
+  /**
+   * Muestra el diálogo para resetear contraseña
+   */
+  showResetPasswordDialog(): void {
+    this.resetPasswordDialog = true;
+    this.newPassword = '';
+  }
+
+  /**
+   * Confirma el reseteo de contraseña
+   */
+  confirmResetPassword(): void {
+    if (!this.currentUser.id) {
+      this.messageService.add({ 
+        severity: 'error', 
+        summary: 'Error', 
+        detail: 'No se encontró el ID del usuario' 
+      });
+      return;
+    }
+
+    if (!this.newPassword || this.newPassword.length < 6) {
+      this.messageService.add({ 
+        severity: 'warn', 
+        summary: 'Validación', 
+        detail: 'La contraseña debe tener al menos 6 caracteres' 
+      });
+      return;
+    }
+
+    this.usersService.resetPassword(this.currentUser.id, this.newPassword).subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.messageService.add({ 
+            severity: 'success', 
+            summary: 'Éxito', 
+            detail: res.message || 'Contraseña reseteada correctamente' 
+          });
+          this.resetPasswordDialog = false;
+          this.newPassword = '';
+        }
+      },
+      error: (err) => {
+        this.messageService.add({ 
+          severity: 'error', 
+          summary: 'Error', 
+          detail: err.error?.message || 'Error al resetear la contraseña' 
         });
       }
     });

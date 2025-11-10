@@ -90,9 +90,10 @@ si2-mrp-fe/
 - Análisis inteligente de datos
 
 ### 👥 **Gestión de Usuarios y Roles**
-- Autenticación OAuth2
+- Autenticación OAuth2 con refresh token automático
 - Roles y permisos granulares
 - Gestión de organizaciones
+- Cambio y reseteo de contraseñas
 
 ---
 
@@ -136,7 +137,8 @@ si2-mrp-fe/
 
 - [📋 Estándares de Componentes](./docs/COMPONENT_STANDARDS.md)
 - [🔐 Configuración de Autenticación](./docs/AUTENTICACION.md)
-- [🗺️ Mapeo de Rutas](./docs/ROUTE_MAPPING.md)
+- [� Sistema de Refresh Token](./docs/REFRESH_TOKEN.md)
+- [�🗺️ Mapeo de Rutas](./docs/ROUTE_MAPPING.md)
 - [📝 Resumen de Implementación](./docs/IMPLEMENTATION_SUMMARY.md)
 - [☁️ Guía de Despliegue AWS](./deploy/DEPLOY_AWS.md)
 

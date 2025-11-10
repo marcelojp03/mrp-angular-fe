@@ -2,7 +2,9 @@
 
 ## 📋 Resumen
 
-El sistema de autenticación está configurado para controlar automáticamente el vencimiento de tokens y redirigir al login cuando sea necesario.
+El sistema de autenticación está configurado para controlar automáticamente el vencimiento de tokens y renovarlos de forma transparente usando **refresh tokens**.
+
+> **💡 Nuevo:** Sistema de renovación automática de tokens implementado. Ver [REFRESH_TOKEN.md](./REFRESH_TOKEN.md) para detalles completos.
 
 ## 🔒 Componentes de Seguridad
 
@@ -33,11 +35,25 @@ El sistema de autenticación está configurado para controlar automáticamente e
 **Funcionalidades:**
 1. **Agregar Token Automático**
    - Agrega `Authorization: Bearer {token}` a todas las peticiones (excepto públicas)
-   - Rutas públicas: `/auth/login`, `/public/signup`, `/api/health`
+   - Rutas públicas: `/auth/login`, `/auth/refresh`, `/public/signup`, `/api/health`
 
-2. **Manejo de Errores 401 (Token Inválido/Expirado)**
+2. **🔄 Renovación Automática de Tokens (NUEVO)**
+   - Detecta errores 401 (token expirado)
+   - Intenta renovar con `refresh_token` automáticamente
+   - Reintenta la petición original con el nuevo token
+   - Solo redirige a login si falla el refresh
+   
+   **Flujo mejorado:**
    ```
-   401 Detectado → Limpiar sesión → Redirigir a Login
+   Request → Interceptor agrega token → Backend responde 401
+                                       ↓
+                              Token Expirado Detectado
+                                       ↓
+                          POST /auth/refresh (automático)
+                                       ↓
+                              ✅ Nuevo token obtenido
+                                       ↓
+                          Reintentar request original
    ```
 
 3. **Manejo de Errores 404 (Subscription)**
@@ -49,6 +65,11 @@ El sistema de autenticación está configurado para controlar automáticamente e
 Request → Interceptor agrega token → Backend responde
                                     ↓
                               401 UNAUTHORIZED
+                                    ↓
+                            Intentar Refresh Token
+                                    ↓
+                        ✅ Exitoso → Reintentar request
+                        ❌ Falla → Logout + Redirect Login
                                     ↓
                         Interceptor limpia sesión
                                     ↓
@@ -270,8 +291,61 @@ Para probar el sistema de expiración:
 
 1. **Guards** previenen acceso sin token
 2. **Interceptor** detecta 401 del backend
-3. **Logout automático** limpia sesión
-4. **Redirect a login** preserva returnUrl
-5. **Manejo de errores** diferenciado por código HTTP
+3. **Refresh automático** renueva tokens transparentemente
+4. **Logout automático** cuando falla el refresh
+5. **Redirect a login** preserva returnUrl
+6. **Manejo de errores** diferenciado por código HTTP
+
+---
+
+## 🔑 Gestión de Contraseñas
+
+### **Cambio de Contraseña (Usuario)**
+
+El usuario autenticado puede cambiar su propia contraseña usando:
+
+```typescript
+// AuthService
+changePassword(currentPassword: string, newPassword: string): Observable<Response> {
+  return this.http.put(`${this.apiUrl}/auth/change-password`, {
+    current_password: currentPassword,
+    new_password: newPassword
+  });
+}
+```
+
+**Endpoint:** `PUT /api/auth/change-password`
+
+**Requiere:**
+- ✅ Autenticación válida
+- ✅ Contraseña actual correcta
+- ✅ Nueva contraseña (mínimo 6 caracteres)
+
+---
+
+### **Reseteo de Contraseña (Admin)**
+
+Los administradores pueden resetear la contraseña de cualquier usuario sin necesitar la contraseña anterior:
+
+```typescript
+// OrgUsersService
+resetPassword(userId: number, password: string): Observable<Response> {
+  return this.http.put(`${this.API_URL}/${userId}/password`, { password });
+}
+```
+
+**Endpoint:** `PUT /api/users/:id/password`
+
+**Requiere:**
+- ✅ Rol de administrador
+- ✅ Nueva contraseña (mínimo 6 caracteres)
+- ❌ NO requiere contraseña anterior
+
+**Uso en UI:**
+- Botón "Resetear Contraseña" en el diálogo de edición de usuario
+- Dialog modal con validación de contraseña
+- Feedback inmediato con toast messages
+
+---
 
 **El sistema está completamente funcional y listo para producción.**
