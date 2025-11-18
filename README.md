@@ -1,169 +1,168 @@
-# 🏭 SI2 MRP - Sistema de Planificación de Recursos de Manufactura
+# SI2 MRP - Sistema de Planificación de Recursos de Manufactura
 
-> **Angular Frontend** para el sistema MRP desarrollado en Sistemas de Información 2
-
-[![Angular](https://img.shields.io/badge/Angular-20.x-red)](https://angular.io/)
-[![PrimeNG](https://img.shields.io/badge/PrimeNG-20.x-blue)](https://primeng.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue)](https://www.typescriptlang.org/)
-[![TailwindCSS](https://img.shields.io/badge/Tailwind-3.4-cyan)](https://tailwindcss.com/)
+Sistema de gestión MRP (Material Requirements Planning) desarrollado con Angular 20 para la materia Sistemas de Información 2.
 
 ---
 
-## 🚀 Inicio Rápido
+## Requisitos Previos
 
-### Desarrollo Local
+- Node.js 18 o superior
+- npm 9 o superior
+- Angular CLI 20 (se instala con las dependencias)
+
+---
+
+## Instalación
+
 ```bash
+# Clonar el repositorio
+git clone https://github.com/marcelojp03/mrp-angular-fe.git
+cd mrp-angular-fe
+
 # Instalar dependencias
 npm install
-
-# Iniciar servidor de desarrollo
-npm start
-# Aplicación disponible en: http://localhost:4200
 ```
 
-### Despliegue a AWS S3
+---
+
+## Desarrollo
+
+### Iniciar servidor de desarrollo
+
 ```bash
-# Deploy completo (build + subida)
+npm start
+```
+
+La aplicación estará disponible en `http://localhost:4200`
+
+### Build de desarrollo
+
+```bash
+npm run build
+```
+
+### Build de producción
+
+```bash
+npm run build:prod
+```
+
+Los archivos compilados se generarán en el directorio `dist/`
+
+---
+
+## Despliegue
+
+### Deploy a AWS S3
+
+```bash
+# Deploy completo (build + upload)
 npm run deploy
 
-# Deploy rápido (usa build existente)
+# Deploy rápido (sin build)
 npm run deploy:quick
 ```
 
----
+**URL de producción**: http://si2-mrp-fe.s3-website-us-east-1.amazonaws.com
 
-## 📁 Estructura del Proyecto
-
-```
-si2-mrp-fe/
-├── 📂 src/app/
-│   ├── 📂 auth/              # Autenticación y login
-│   ├── 📂 core/              # Guards, interceptors, layouts
-│   ├── 📂 dashboard/         # Componentes principales del MRP
-│   │   ├── 📂 components/
-│   │   │   ├── 📂 product/           # Gestión de productos
-│   │   │   ├── 📂 inventory/         # Control de inventario
-│   │   │   ├── 📂 warehouses/        # Almacenes
-│   │   │   ├── 📂 suppliers/         # Proveedores
-│   │   │   └── 📂 ...
-│   └── 📂 shared/            # Componentes y servicios compartidos
-├── 📂 docs/                  # Documentación técnica
-├── 📂 deploy/                # Scripts de despliegue
-└── 📂 public/               # Assets estáticos
-```
+Ver [Guía de Despliegue](./deploy/DEPLOY_AWS.md) para más detalles.
 
 ---
 
-## 🛠️ Scripts Disponibles
+## Scripts Disponibles
 
 | Comando | Descripción |
 |---------|-------------|
-| `npm start` | Servidor de desarrollo |
-| `npm run build:prod` | Build para producción |
+| `npm start` | Inicia servidor de desarrollo |
+| `npm run build` | Build de desarrollo |
+| `npm run build:prod` | Build de producción |
+| `npm test` | Ejecuta tests unitarios |
 | `npm run deploy` | Deploy completo a AWS S3 |
-| `npm run deploy:quick` | Deploy rápido a S3 |
-| `npm test` | Ejecutar tests unitarios |
+| `npm run deploy:quick` | Deploy rápido |
 
 ---
 
-## 🎯 Funcionalidades Principales
+## Estructura del Proyecto
 
-### 📊 **Dashboard de Control**
-- KPIs en tiempo real
-- Gráficos interactivos con Chart.js
-- Monitoreo de inventario y producción
-
-### 🏭 **Gestión de Producción**
-- **BOMs (Bills of Materials)**: Listas de materiales con componentes
-- **Órdenes de Trabajo**: Planificación y seguimiento de producción
-- **Reportes de Producción**: Análisis de eficiencia y tiempos
-
-### 📦 **Control de Inventario**
-- Gestión de productos y categorías
-- Control de almacenes múltiples
-- Movimientos y trazabilidad
-- Sugerencias de reposición automáticas
-
-### 🤖 **Reportes con IA**
-- Generación de reportes con lenguaje natural
-- Exportación a múltiples formatos (CSV, Excel, PDF)
-- Análisis inteligente de datos
-
-### 👥 **Gestión de Usuarios y Roles**
-- Autenticación OAuth2 con refresh token automático
-- Roles y permisos granulares
-- Gestión de organizaciones
-- Cambio y reseteo de contraseñas
+```
+mrp_angular_fe/
+├── src/                    # Código fuente
+│   ├── app/                # Aplicación Angular
+│   ├── assets/             # Assets estáticos
+│   └── environments/       # Configuración por ambiente
+├── docs/                   # Documentación técnica
+├── deploy/                 # Scripts de despliegue
+└── public/                 # Archivos públicos
+```
 
 ---
 
-## 🏗️ Arquitectura Técnica
+## Documentación
 
-### **Frontend Stack**
-- **Angular 20**: Framework principal
-- **PrimeNG**: Componentes UI
-- **TailwindCSS**: Styling utility-first
-- **Chart.js**: Gráficos y visualizaciones
-- **RxJS**: Programación reactiva
+### General
+- [Información del Proyecto](./docs/PROJECT_INFO.md) - Descripción completa del sistema
+- [Resumen de Implementación](./docs/IMPLEMENTATION_SUMMARY.md) - Sprint y funcionalidades
 
-### **Patrones de Componentes**
-- **Patrón A (CRUD)**: Componentes con operaciones completas
-- **Patrón B (Read-Only)**: Componentes de análisis y reportes
-- **Signals**: Estado reactivo de Angular
-- **Standalone Components**: Sin módulos NgModule
+### Desarrollo
+- [Estándares de Componentes](./docs/COMPONENT_STANDARDS.md) - Patrones y guías de desarrollo
+- [Mapeo de Rutas](./docs/ROUTE_MAPPING.md) - Estructura de navegación
 
-### **Backend Integration**
-- **OAuth2**: Autenticación con JWT
-- **REST APIs**: Comunicación con backend
-- **Interceptors**: Manejo automático de tokens
-- **Environment-based**: Configuración por ambiente
+### Seguridad
+- [Autenticación](./docs/AUTENTICACION.md) - Sistema de autenticación OAuth2
+- [Refresh Token](./docs/REFRESH_TOKEN.md) - Renovación automática de tokens
+
+### Despliegue
+- [Guía de Despliegue AWS](./deploy/DEPLOY_AWS.md) - Configuración de AWS S3
 
 ---
 
-## 🌐 Despliegue
+## Configuración de Environments
 
-### **AWS S3 + CloudFront**
-- **Bucket**: `si2-mrp-fe`
-- **Región**: `us-east-1`
-- **URL**: http://si2-mrp-fe.s3-website-us-east-1.amazonaws.com
+### Development
+Archivo: `src/environments/environment.ts`
+- Backend: `http://localhost:4646/api`
+- OAuth Server: `http://localhost:8585/api`
 
-### **Environments**
-- **Development**: `localhost:4200` → `localhost:4646/api`
-- **Production**: AWS S3 → AWS App Runner backend
+### Production
+Archivo: `src/environments/environment.prod.ts`
+- Backend: AWS App Runner
+- OAuth Server: Servidor de producción
 
----
-
-## 📚 Documentación
-
-- [📋 Estándares de Componentes](./docs/COMPONENT_STANDARDS.md)
-- [🔐 Configuración de Autenticación](./docs/AUTENTICACION.md)
-- [� Sistema de Refresh Token](./docs/REFRESH_TOKEN.md)
-- [�🗺️ Mapeo de Rutas](./docs/ROUTE_MAPPING.md)
-- [📝 Resumen de Implementación](./docs/IMPLEMENTATION_SUMMARY.md)
-- [☁️ Guía de Despliegue AWS](./deploy/DEPLOY_AWS.md)
+El archivo correcto se selecciona automáticamente según el comando de build utilizado.
 
 ---
 
-## 🤝 Contribución
+## Tecnologías Principales
 
-1. **Fork** el proyecto
-2. **Crea** una rama feature (`git checkout -b feature/nueva-funcionalidad`)
-3. **Commit** tus cambios (`git commit -m 'Add: nueva funcionalidad'`)
-4. **Push** a la rama (`git push origin feature/nueva-funcionalidad`)
-5. **Abre** un Pull Request
-
----
-
-## 📄 Licencia
-
-Este proyecto es desarrollado para fines académicos en la materia **Sistemas de Información 2**.
+- Angular 20
+- PrimeNG 20
+- TypeScript 5.8
+- TailwindCSS 3.4
+- RxJS
+- Chart.js
 
 ---
 
-## 👨‍💻 Desarrollado por
+## Contribución
+
+1. Fork el proyecto
+2. Crea una rama feature (`git checkout -b feature/nueva-funcionalidad`)
+3. Commit los cambios (`git commit -m 'Add: nueva funcionalidad'`)
+4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
+5. Abre un Pull Request
+
+---
+
+## Equipo
 
 **Universidad Autónoma Gabriel René Moreno**  
-**Facultad de Ciencias Exactas y Tecnología**  
-**Carrera de Ingeniería de Sistemas**
+Facultad de Ciencias Exactas y Tecnología  
+Carrera de Ingeniería de Sistemas
 
-*Sistemas de Información 2 - Semestre 2-2025*
+Sistemas de Información 2 - Semestre 2-2025
+
+---
+
+## Licencia
+
+Proyecto académico desarrollado para la materia Sistemas de Información 2.
